@@ -1,13 +1,13 @@
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { siteOrigin, workspaceOrigin } from './vercel-origins.mjs';
-import { accountConfig } from '../server/account-config.mjs';
 
 const root = new URL('../', import.meta.url);
 const output = new URL('build/vercel/', root);
 const site = 'deploy/pages';
 const web = 'src/main/resources/web';
-const accounts = accountConfig();
-const accountLanding = process.env.CELLAR_AUTH_LANDING === '1' && Boolean(accounts);
+// Keep the company homepage at the public root. Authentication is offered only
+// on the clearly branded /signin.html route, never as an unexpected gate.
+const accountLanding = false;
 
 function restrictConnections(html, origin = '') {
   const policy = origin ? "connect-src 'self' " + origin : "connect-src 'self'";

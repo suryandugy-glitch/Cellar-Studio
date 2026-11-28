@@ -34,8 +34,7 @@ Cellar Studio uses Supabase Auth to store accounts and manage passwords. The Ver
 | `CELLAR_SUPABASE_PUBLISHABLE_KEY` | Supabase `sb_publishable_…` key |
 | `CELLAR_AUTH_ORIGIN` | `https://cellar-csv.vercel.app` |
 | `CELLAR_AUTH_GOOGLE` | `1` once the Google provider is set up |
-| `CELLAR_AUTH_LANDING` | `1` after verifying sign-in at `/signin.html` |
 
-Keep the Google client secret in Supabase. Deploy after setting the variables. Open `/signin.html` and check signup, email verification, Google, the account page, and sign-out. Test **Keep me signed in** by closing and reopening the browser. A valid session automatically opens the account page when the user returns to the sign-in landing.
+Keep the Google client secret in Supabase. Deploy after setting the variables. Open `/signin.html` and check signup, email verification, Google, the account page, and sign-out. Test **Keep me signed in** by closing and reopening the browser. A valid session automatically opens the account page when a signed-in user returns to `/signin.html`.
 
-When `CELLAR_AUTH_LANDING` is enabled and the Supabase variables are present, the sign-in page is published at `/`. **Continue as a guest** opens `/studio.html`. The public products, checker and help pages remain directly accessible. To restore the public homepage, remove `CELLAR_AUTH_LANDING` and redeploy.
+The public `/` route always shows the Cellar Studio company homepage. Sign-in is available only at `/signin.html`, and the public products, checker and help pages remain accessible without an account.

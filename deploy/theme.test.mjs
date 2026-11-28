@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { accountConfig } from '../server/account-config.mjs';
 
 const root = resolve('build/vercel');
-const signInLanding = process.env.CELLAR_AUTH_LANDING === '1' && Boolean(accountConfig());
+const signInLanding = false;
 const redirects = JSON.parse(await readFile(resolve('vercel.json'), 'utf8')).redirects;
 assert.ok(!redirects.some(route => route.source === '/' &&
   (!route.has || route.has.some(check => check.type === 'host' && check.value === 'cellar-csv.vercel.app'))),
@@ -38,6 +37,11 @@ for (const file of files) {
 }
 const index = await readFile(resolve(root, 'index.html'), 'utf8');
 const studio = await readFile(resolve(root, 'studio.html'), 'utf8');
+const signIn = await readFile(resolve(root, 'signin.html'), 'utf8');
+assert.doesNotMatch(index, /data-account-page="signin"/, 'Company home must not masquerade as a login gate');
+assert.match(signIn, /data-account-page="signin"/);
+assert.match(signIn, /Use your Cellar Studio account/);
+assert.doesNotMatch(signIn, /Microsoft account|data-provider="microsoft"/);
 const home = signInLanding ? studio : index;
 if (signInLanding) {
   assert.match(index, /data-account-page="signin"/);
