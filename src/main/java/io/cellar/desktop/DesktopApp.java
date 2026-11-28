@@ -186,8 +186,12 @@ public final class DesktopApp {
         inputCard.setBorder(cardBorder());
         csvLabel.setToolTipText("Choose the export you want to verify");
         rulesLabel.setToolTipText("Create or import rules that describe the receiving system");
-        inputCard.add(row(heading("1  CSV export", 15), chooseCsv));
-        inputCard.add(row(csvLabel));
+        JPanel csvRow = new JPanel(new BorderLayout(7, 0));
+        csvRow.setOpaque(false);
+        csvRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        csvRow.add(row(heading("1  CSV export", 15), chooseCsv), BorderLayout.WEST);
+        csvRow.add(csvLabel, BorderLayout.CENTER);
+        inputCard.add(csvRow);
         inputCard.add(Box.createVerticalStrut(8));
         inputCard.add(row(heading("2  Import rules", 15), buildRules, importRules, saveRules));
         inputCard.add(row(rulesLabel));
@@ -200,17 +204,20 @@ public final class DesktopApp {
         JPanel results = new JPanel(new BorderLayout(0, 10));
         results.setBackground(Color.WHITE);
         results.setBorder(cardBorder());
-        JPanel status = stack(Color.WHITE);
-        status.add(verdict);
-        status.add(Box.createVerticalStrut(3));
-        status.add(feedback);
+        JPanel status = new JPanel(new BorderLayout(0, 6));
+        status.setOpaque(false);
+        JPanel resultTitle = new JPanel(new BorderLayout(9, 0));
+        resultTitle.setOpaque(false);
+        resultTitle.add(verdict, BorderLayout.CENTER);
+        resultTitle.add(saveReport, BorderLayout.EAST);
+        status.add(resultTitle, BorderLayout.NORTH);
+        status.add(feedback, BorderLayout.SOUTH);
         results.add(status, BorderLayout.NORTH);
         findings.setRows(4);
         findings.getAccessibleContext().setAccessibleName("Check findings");
         JScrollPane scroll = new JScrollPane(findings);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         results.add(scroll, BorderLayout.CENTER);
-        results.add(row(saveReport), BorderLayout.SOUTH);
         page.add(results, BorderLayout.CENTER);
         return page;
     }
@@ -439,6 +446,7 @@ public final class DesktopApp {
         for (JButton input : List.of(chooseCsv, buildRules, importRules, demo)) input.setEnabled(!busy);
         saveRules.setEnabled(!busy && activeContract() != null);
         check.setEnabled(!busy && activeContract() != null && (csvPath != null || demoSelected));
+        demo.setVisible(!demoSelected);
         fixDemo.setVisible(demoSelected);
         leaveDemo.setVisible(demoSelected);
         leaveDemo.setEnabled(!busy);
@@ -577,6 +585,13 @@ public final class DesktopApp {
                     app.acceptRules(makeRules("example", "customer\namount", 1), null);
                     app.csvPath = csv;
                     app.inputsChanged();
+                    app.check.doClick();
+                });
+                app.awaitVerdict("PASS");
+                SwingUtilities.invokeAndWait(app.demo::doClick);
+                app.awaitVerdict("BLOCK");
+                SwingUtilities.invokeAndWait(() -> {
+                    app.leaveDemo.doClick();
                     app.check.doClick();
                 });
                 app.awaitVerdict("PASS");
