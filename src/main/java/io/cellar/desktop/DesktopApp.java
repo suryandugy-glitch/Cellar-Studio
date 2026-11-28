@@ -197,15 +197,15 @@ public final class DesktopApp {
     }
 
     private JPanel workspace() {
-        JPanel page = new JPanel(new BorderLayout(0, 14));
+        JPanel page = new JPanel(new BorderLayout(0, 9));
         page.setBackground(CANVAS);
-        page.setBorder(BorderFactory.createEmptyBorder(22, 24, 20, 24));
+        page.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
 
         JPanel form = stack(CANVAS);
         form.add(heading("Check a CSV export", 30));
-        form.add(Box.createVerticalStrut(5));
+        form.add(Box.createVerticalStrut(4));
         form.add(label("See whether your CSV will work with the system that receives it."));
-        form.add(Box.createVerticalStrut(14));
+        form.add(Box.createVerticalStrut(9));
 
         JPanel inputCard = stack(Color.WHITE);
         inputCard.setBorder(cardBorder());
@@ -217,19 +217,19 @@ public final class DesktopApp {
         csvRow.add(row(heading("1  CSV export", 15), chooseCsv), BorderLayout.WEST);
         csvRow.add(csvLabel, BorderLayout.CENTER);
         inputCard.add(csvRow);
-        inputCard.add(Box.createVerticalStrut(8));
+        inputCard.add(Box.createVerticalStrut(3));
         inputCard.add(row(heading("2  Import rules", 15), buildRules, importRules, saveRules));
         inputCard.add(row(rulesLabel));
         inputCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         form.add(inputCard);
-        form.add(Box.createVerticalStrut(8));
+        form.add(Box.createVerticalStrut(4));
         form.add(row(check, demo, fixDemo, leaveDemo));
         page.add(form, BorderLayout.NORTH);
 
-        JPanel results = new JPanel(new BorderLayout(0, 10));
+        JPanel results = new JPanel(new BorderLayout(0, 6));
         results.setBackground(Color.WHITE);
         results.setBorder(cardBorder());
-        JPanel status = new JPanel(new BorderLayout(0, 6));
+        JPanel status = new JPanel(new BorderLayout(0, 4));
         status.setOpaque(false);
         JPanel resultTitle = new JPanel(new BorderLayout(9, 0));
         resultTitle.setOpaque(false);
@@ -354,7 +354,13 @@ public final class DesktopApp {
     }
 
     private void loadBaseline(Path baseline, RuleDraft draft) {
-        perform(() -> baselineDraft(baseline, draft), this::editRules, message -> {
+        String previousFeedback = feedback.getText();
+        feedback.setText("Reading column names from the known-good export…");
+        perform(() -> baselineDraft(baseline, draft), completed -> {
+            feedback.setText(previousFeedback);
+            editRules(completed);
+        }, message -> {
+            feedback.setText(previousFeedback);
             JOptionPane.showMessageDialog(window, message, "Could not load CSV headers", JOptionPane.ERROR_MESSAGE);
             editRules(draft);
         });
@@ -646,7 +652,9 @@ public final class DesktopApp {
     private JFileChooser chooser(String title, String type, String extension) {
         JFileChooser chooser = new JFileChooser(lastDirectory);
         chooser.setDialogTitle(title);
-        chooser.setFileFilter(new FileNameExtensionFilter(type + " (*." + extension + ")", extension));
+        chooser.setFileFilter(extension.equals("csv")
+            ? new FileNameExtensionFilter("CSV and TSV exports (*.csv, *.tsv)", "csv", "tsv")
+            : new FileNameExtensionFilter(type + " (*." + extension + ")", extension));
         return chooser;
     }
 
