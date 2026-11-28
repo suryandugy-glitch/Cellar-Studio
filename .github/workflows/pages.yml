@@ -33,7 +33,11 @@ jobs:
           grep -q 'CSV compatibility checks' build/vercel/guard.html
           diff -r --exclude='*.html' build/pages build/vercel
           for page in demo.html guide.html walkthrough.html workplace.html; do
-            sed '/<meta http-equiv="Content-Security-Policy"/d' "build/vercel/$page" | diff "build/pages/$page" -
+            # The account menu uses the Vercel account API.
+            sed -e '/<meta http-equiv="Content-Security-Policy"/d' \
+              -e '\|^  <link rel="stylesheet" href="\./account-menu\.css">$|d' \
+              -e '\|^  <script type="module" src="\./account-menu\.js"></script>$|d' \
+              "build/vercel/$page" | diff "build/pages/$page" -
           done
       - name: Test the browser checker and shared site styles
         run: node --test deploy/guard-engine.test.mjs deploy/theme.test.mjs deploy/site-assistant.test.mjs
