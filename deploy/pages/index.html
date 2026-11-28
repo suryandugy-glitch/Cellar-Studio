@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="./product-theme.css">
   <link rel="stylesheet" href="./minimal-brutal.css">
   <link rel="stylesheet" href="./neo-bento.css">
+  <link rel="stylesheet" href="./guard-demo.css">
+  <script type="module" src="./guard-demo.js"></script>
   <script src="./landing.js" defer></script>
   <script src="./product-shell.js" defer></script>
   <script src="./minimal-motion.js" defer></script>
@@ -41,7 +43,7 @@
         <a href="./about.html">About us</a>
         <a href="./manual.html">Manual</a>
       </nav>
-      <div class="header-actions"><a class="button button-outline repo-button" href="./manual.html#demo"><span>See demo</span></a><a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Guard ZIP</a></div>
+      <div class="header-actions"><a class="button button-outline repo-button" href="#live-demo"><span>Try live demo</span></a><a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Guard ZIP</a></div>
     </div>
   </header>
   <main id="main">
@@ -52,9 +54,9 @@
           <h1 id="hero-title">Catch CSV export changes that would break a customer’s import, <span>before you ship.</span></h1>
           <p class="lede">Check a CSV on your phone or computer. Add the Java checker to your pull-request workflow to catch breaking exports before release.</p>
           <div class="hero-actions">
-            <a href="./guard-app.html" class="button button-primary">Open CSV checker</a>
+            <a href="#live-demo" class="button button-primary">Try live demo</a>
+            <a href="./guard-app.html" class="button button-outline">Check your own CSV</a>
             <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0" class="button button-outline">Download Java app ZIP</a>
-            <a class="button button-outline" href="./manual.html#demo">Learn to use and fix it</a>
           </div>
           <p class="hero-meta"><span>Open source</span><span>Java 21+</span><span>Windows · macOS · Linux</span></p>
         </div>
@@ -88,6 +90,40 @@
             <div class="preview-verdict"><svg class="icon" aria-hidden="true"><use href="#shield"/></svg><strong>Release blocked</strong><code>EXIT 1</code></div>
           </div>
         </aside>
+      </div>
+    </section>
+    <section class="wrap guard-demo" id="live-demo" aria-labelledby="guard-demo-title">
+      <header class="section-head">
+        <h2 id="guard-demo-title">Try Cellar Guard live</h2>
+        <p>Run the breaking sample to see why the inventory import fails, then apply the sample fix and watch it pass. You can edit the sample and run the check again. No account is required.</p>
+      </header>
+      <div class="guard-demo-grid">
+        <div class="guard-demo-card">
+          <fieldset data-demo-controls disabled aria-label="Live demo controls">
+            <div class="guard-demo-samples" role="group" aria-label="Sample exports">
+              <button type="button" class="button button-outline" data-demo-sample="passing">Run passing sample</button>
+              <button type="button" class="button button-outline" data-demo-sample="breaking">Run breaking sample</button>
+              <button type="button" class="button button-outline" data-demo-sample="fixed">Apply sample fix</button>
+            </div>
+            <label for="guard-demo-csv">Sample CSV</label>
+            <textarea id="guard-demo-csv" rows="5" spellcheck="false" autocomplete="off" aria-describedby="guard-demo-csv-help"></textarea>
+            <p id="guard-demo-csv-help">Checks run in your browser using the sample import rules.</p>
+            <button type="button" class="button button-primary" data-demo-run>Run check</button>
+          </fieldset>
+          <details class="guard-demo-rules">
+            <summary>View sample import rules</summary>
+            <pre data-demo-contract>Loading the sample contract…</pre>
+          </details>
+        </div>
+        <div class="guard-demo-card guard-demo-results">
+          <h3>Compatibility report</h3>
+          <p class="guard-demo-verdict" role="status" data-demo-verdict>Loading samples…</p>
+          <p data-demo-next></p>
+          <ul data-demo-results></ul>
+          <button type="button" class="button button-outline" data-demo-retry hidden>Reload samples</button>
+          <a class="button button-outline guard-demo-own" href="./guard-app.html">Open checker for your own CSV</a>
+          <noscript><p>Enable JavaScript for the live demo or <a href="./walkthrough.html">read the sample reports</a>.</p></noscript>
+        </div>
       </div>
     </section>
     <section class="wrap details-section" id="workflow" aria-labelledby="workflow-title">

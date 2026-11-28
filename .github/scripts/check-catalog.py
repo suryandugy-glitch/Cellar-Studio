@@ -36,6 +36,45 @@ with sync_playwright() as playwright:
             overflow = page.evaluate('document.documentElement.scrollWidth - innerWidth')
             assert overflow <= 1, (width, route, overflow)
 
+    # The product demo runs the checker against sample and edited CSV content.
+    page.set_viewport_size({'width': 390, 'height': 780})
+    page.goto(BASE + 'products.html')
+    page.get_by_role('link', name='Try live demo').click()
+    assert page.url == BASE + 'guard.html#live-demo'
+    demo = page.get_by_role('region', name='Try Cellar Guard live')
+    verdict = demo.get_by_role('status')
+    demo.locator('[data-state="pass"]').wait_for()
+    reload_samples = demo.get_by_role('button', name='Reload samples')
+    assert reload_samples.is_hidden()
+    fix = demo.get_by_role('button', name='Apply sample fix')
+    assert fix.is_disabled()
+    demo.get_by_role('button', name='Run breaking sample').click()
+    assert 'BLOCK' in verdict.inner_text()
+    assert 'order_id' in demo.locator('[data-demo-results]').inner_text()
+    assert 'PASS · finance-summary' in demo.locator('[data-demo-results]').inner_text()
+    assert fix.is_enabled()
+    fix.click()
+    assert 'PASS' in verdict.inner_text()
+    assert 'order_id,id,' in demo.get_by_label('Sample CSV', exact=True).input_value()
+    assert fix.is_disabled()
+
+    editor = demo.get_by_label('Sample CSV', exact=True)
+    editor.fill('order_id,sku,total_cents,currency\nA-1,SEED,-1,INR\n')
+    assert 'Sample edited' in verdict.inner_text()
+    assert demo.locator('[data-demo-results]').inner_text() == ''
+    demo.get_by_role('button', name='Run check').click()
+    assert 'BLOCK' in verdict.inner_text()
+    assert 'total_cents' in demo.locator('[data-demo-results]').inner_text()
+    editor.fill('order_id,sku,total_cents,currency\nA-1,only-two-columns\n')
+    demo.get_by_role('button', name='Run check').click()
+    assert 'Could not check this CSV' in verdict.inner_text()
+    assert editor.get_attribute('aria-invalid') == 'true'
+    demo.get_by_role('button', name='Run passing sample').click()
+    assert 'PASS' in verdict.inner_text()
+    assert editor.get_attribute('aria-invalid') is None
+    assert demo.get_by_role('link', name='Open checker for your own CSV').get_attribute('href') == './guard-app.html'
+    assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+
     # A real no-data choice, persisted and reversible in the same browser.
     page.set_viewport_size({'width': 1440, 'height': 900})
     page.goto(BASE + 'cookie-policy.html')
