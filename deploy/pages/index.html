@@ -43,7 +43,7 @@
         <a href="./about.html">About us</a>
         <a href="./manual.html">Manual</a>
       </nav>
-      <div class="header-actions"><a class="button button-outline repo-button" href="#live-demo"><span>Try live demo</span></a><a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Guard ZIP</a></div>
+      <div class="header-actions"><a class="button button-outline repo-button" href="#live-demo"><span>Try live demo</span></a><a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe">Download for Windows</a></div>
     </div>
   </header>
   <main id="main">
@@ -56,7 +56,7 @@
           <div class="hero-actions">
             <a href="#live-demo" class="button button-primary">Try live demo</a>
             <a href="./guard-app.html" class="button button-outline">Check your own CSV</a>
-            <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0" class="button button-outline">Download Java app ZIP</a>
+            <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0" class="button button-outline">Downloads</a>
           </div>
           <p class="hero-meta"><span>Open source</span><span>Java 21+</span><span>Windows · macOS · Linux</span></p>
         </div>
@@ -95,7 +95,7 @@
     <section class="wrap guard-demo" id="live-demo" aria-labelledby="guard-demo-title">
       <header class="section-head">
         <h2 id="guard-demo-title">Try Cellar Guard live</h2>
-        <p>Run the breaking sample to see why the inventory import fails, then apply the sample fix and watch it pass. You can edit the sample and run the check again. No account is required.</p>
+        <p>Run the breaking sample, compare it with the passing export, then apply the fix. Edit the CSV to test your own changes against the same import rules.</p>
       </header>
       <div class="guard-demo-grid">
         <div class="guard-demo-card">
@@ -108,7 +108,10 @@
             <label for="guard-demo-csv">Sample CSV</label>
             <textarea id="guard-demo-csv" rows="5" spellcheck="false" autocomplete="off" aria-describedby="guard-demo-csv-help"></textarea>
             <p id="guard-demo-csv-help">Checks run in your browser using the sample import rules.</p>
-            <button type="button" class="button button-primary" data-demo-run>Run check</button>
+            <div class="guard-demo-actions">
+              <button type="button" class="button button-primary" data-demo-run>Run check</button>
+              <button type="button" class="button button-outline" data-demo-compare>Compare to passing sample</button>
+            </div>
           </fieldset>
           <details class="guard-demo-rules">
             <summary>View sample import rules</summary>
@@ -116,7 +119,7 @@
           </details>
         </div>
         <div class="guard-demo-card guard-demo-results">
-          <h3>Compatibility report</h3>
+          <h3>Export report</h3>
           <p class="guard-demo-verdict" role="status" data-demo-verdict>Loading samples…</p>
           <p data-demo-next></p>
           <ul data-demo-results></ul>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6f5ef">
-  <meta name="description" content="Easy Cellar Guard manual: download the Java ZIP, run PASS/BLOCK/FIX examples, repair a broken CSV header, and set up pull-request checks.">
+  <meta name="description" content="Easy Cellar Guard manual: download the Windows app, run PASS/BLOCK/FIX examples, repair a broken CSV header, and set up pull-request checks.">
   <title>Cellar Guard manual | Java CLI and pull request setup</title>
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./company-pages.css">
@@ -28,7 +28,7 @@
         <p class="company-kicker">Cellar Guard / User manual</p>
         <h1>Protect CSV imports. <em>On every PR.</em></h1>
         <p class="company-lede">Start with a safe example. See a CSV pass, watch a renamed column block the release, fix that column, and check again. The real Java checker runs on your computer; this page explains the steps.</p>
-        <div class="company-hero-actions"><a class="company-button" href="./guard-app.html">Open CSV checker</a><a class="company-button company-button-outline" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Cellar Guard ZIP</a><a class="company-button company-button-outline" href="#demo">See the fix demo</a></div>
+        <div class="company-hero-actions"><a class="company-button" href="./guard-app.html">Open CSV checker</a><a class="company-button company-button-outline" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe">Download Windows app (.exe)</a><a class="company-button company-button-outline" href="#demo">See the fix demo</a></div>
       </div>
     </section>
     <section class="company-section" id="web-app"><div class="company-wrap">
@@ -44,14 +44,17 @@
       </article>
     </div></section>
     <section class="company-section company-section-tint" id="install"><div class="company-wrap">
-      <div class="company-section-heading"><p class="company-kicker">01 / Download &amp; run</p><h2>Start without <em>building code.</em></h2><p>Download and extract the dedicated Guard ZIP. Java 21 or newer must be installed; check with <code>java -version</code>. The ZIP already contains the Java application.</p></div>
+      <div class="company-section-heading"><p class="company-kicker">01 / Download &amp; run</p><h2>Open the <em>desktop checker.</em></h2></div>
       <div class="company-panel company-panel-yellow">
-        <p><strong>Windows:</strong> Double-click <code>start-guard.bat</code> in the extracted folder.</p>
-        <p><strong>macOS / Linux:</strong> In that folder, run <code>sh start-guard.sh</code>.</p>
-        <pre><code>java -version
-sh start-guard.sh  # macOS / Linux
-# Windows: double-click start-guard.bat</code></pre>
-        <p>Keep the terminal open. Open the local address printed by Java, usually <code>http://127.0.0.1:8080</code>. No Git or compiler is needed for the downloaded ZIP.</p>
+        <p><strong>Windows x64:</strong> Double-click <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe">Cellar-Guard-Windows-x64.exe</a>. It includes Java and opens the desktop checker. Use <strong>Run breaking demo</strong>, <strong>Apply demo fix &amp; recheck</strong>, and <strong>User manual</strong> for a walkthrough.</p>
+        <p><strong>Java workspace and CLI:</strong> Download the <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0">Java ZIP</a> and extract it. Install Java 21 or newer, then run <code>sh start-guard.sh</code> on macOS/Linux or double-click <code>start-guard.bat</code> on Windows. Open the local address printed in the terminal.</p>
+      </div>
+    </div></section>
+    <section class="company-section" id="compare-exports"><div class="company-wrap">
+      <div class="company-section-heading"><h2>Compare two exports.</h2><p>Find added, removed or reordered columns before running a full compatibility check.</p></div>
+      <div class="company-panel company-panel-blue">
+        <p>In the Windows app, open <strong>Compare exports</strong>, select the previous export and the new export, and choose their shared separator. Select <strong>Compare headers</strong> and save the text report if you need to share the changes.</p>
+        <p>In the <a href="./guard.html#live-demo">live demo</a>, select <strong>Run breaking sample</strong>, then <strong>Compare to passing sample</strong>. The same two samples are available from <strong>Compare samples</strong> on Windows.</p>
       </div>
     </div></section>
     <section class="company-section" id="demo"><div class="company-wrap">

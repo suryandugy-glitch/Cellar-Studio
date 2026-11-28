@@ -181,3 +181,6 @@ html[data-theme="dark"] .cellar-home .vision-next {background:#bba26a;}
   .reveal-ready .cellar-home [data-reveal] {opacity:1;transform:none;transition:none;}
   .cellar-home :is(.vision-tile,.tile-footer b) {transition:none;}
 }
+
+.cellar-home .vision-product-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin: 0 0 1rem; }
+.cellar-home .vision-product-actions .button { max-width: 100%; text-align: center; }

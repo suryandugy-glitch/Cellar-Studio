@@ -1,0 +1,33 @@
+Try the built-in demo
+
+1. Click Run breaking demo. The demo changes order_id to id, which breaks the inventory report. The finance integration still passes.
+2. Click Apply demo fix & recheck to restore order_id in the sample and see it pass. Click Back to my files to resume your own check.
+
+Check your own export
+
+1. Click Choose CSV and select the UTF-8 export you plan to send.
+2. Click Create rules. Pick the CSV separator and type one required column name per line. If you have a previous export that imports successfully, click Load headers from CSV to fill in its column names. Review the list before using it.
+3. Click Use these rules. If you already have a Cellar Guard contract, you can use Import JSON instead. The check starts once the CSV and rules are ready.
+4. Correct the export at its source. If you saved changes to the selected CSV or JSON, click Check export to reread both files. Choose CSV again when you generate a file with a new name.
+
+Compare two exports
+
+1. Open Compare exports. Pick a previous export and the new export, or click Compare samples to see a column rename.
+2. For your files, choose their shared separator and click Compare headers. See added and removed columns and changes to the order of columns both files share.
+3. Save comparison to share the text report. Run CSV checker with the customer's import rules to check values and confirm compatibility.
+
+Read and share the result
+
+PASS means every integration met its rules.
+BLOCK means at least one required integration failed. Correct the issue before sending the export.
+WARN means only advisory integrations reported issues.
+CSV input error points to a problem opening or parsing the export. For a row-width error, check the separator and the indicated record.
+Rules error points to the imported JSON. Fix it and retry, or choose another contract.
+
+Use the view menu to show all integrations, just the issues, or the export's column names. Copy report and Save report include all rule results regardless of the view. Save rules lets you reuse the current contract.
+
+About files and rules
+
+Rules created from column names check required headers and record widths. Column names are case-sensitive. Import a JSON contract to use advanced rules such as value types, numeric ranges, or uniqueness.
+
+Guard accepts UTF-8 files up to 8 MiB and validates up to 100,000 data records. Reports include rule findings and record numbers. Raw CSV cell values stay on your device and are omitted from reports.

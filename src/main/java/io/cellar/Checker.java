@@ -87,11 +87,28 @@ public final class Checker {
             };
         }catch(DateTimeException e){return false;}
     }
+    public record HeaderChanges(List<String> added, List<String> removed, boolean reordered) {}
+
+    public static HeaderChanges compareHeaders(String before, String after, char delimiter) {
+        return headerChanges(Csv.parse(before, delimiter, false).header(), Csv.parse(after, delimiter, false).header());
+    }
+
+    private static HeaderChanges headerChanges(List<String> baseline, List<String> candidate) {
+        Set<String> previous = new HashSet<>(baseline);
+        Set<String> current = new HashSet<>(candidate);
+        List<String> added = candidate.stream().filter(column -> !previous.contains(column)).toList();
+        List<String> removed = baseline.stream().filter(column -> !current.contains(column)).toList();
+        List<String> beforeOrder = baseline.stream().filter(current::contains).toList();
+        List<String> afterOrder = candidate.stream().filter(previous::contains).toList();
+        return new HeaderChanges(added, removed, !beforeOrder.equals(afterOrder));
+    }
+
     public static Map<String,Object> diff(Contract contract,String before,String after) {
-        List<String> old=Csv.parse(before,contract.delimiter(),false).header();
-        List<String> current=Csv.parse(after,contract.delimiter(),false).header();
-        List<String> added=current.stream().filter(x->!old.contains(x)).toList();
-        List<String> removed=old.stream().filter(x->!current.contains(x)).toList();
+        List<String> old = Csv.parse(before, contract.delimiter(), false).header();
+        List<String> current = Csv.parse(after, contract.delimiter(), false).header();
+        HeaderChanges headers = headerChanges(old, current);
+        List<String> added = headers.added();
+        List<String> removed = headers.removed();
         List<Object> impacted=new ArrayList<>();
         for(var i:contract.integrations()) {
             List<String> lost=i.required().stream().filter(removed::contains).toList();
@@ -99,7 +116,6 @@ public final class Checker {
             boolean order=i.order().equals(old)&&!i.order().equals(current);
             if(!lost.isEmpty()||!unexpected.isEmpty()||order)impacted.add(Json.map("integration",i.id(),"owner",i.owner(),"removedRequired",lost,"unexpectedAdded",unexpected,"orderMismatch",order));
         }
-        boolean reordered=!old.stream().filter(current::contains).toList().equals(current.stream().filter(old::contains).toList());
         // Suggest header-only migrations. Each target is claimed at most once, and low-confidence
         // guesses are omitted; a name match alone is never proof that data semantics agree.
         List<Object> renameCandidates=new ArrayList<>();
@@ -121,7 +137,7 @@ public final class Checker {
                     "action","Keep the old column until affected consumers migrate; validate data semantics before renaming."));
             }
         }
-        return Json.map("added",added,"removed",removed,"reordered",reordered,"impacted",impacted,
+        return Json.map("added",added,"removed",removed,"reordered",headers.reordered(),"impacted",impacted,
             "affectedIntegrations",impacted.size(),"renameCandidates",renameCandidates,
             "note","Diff compares headers only. Rename suggestions are name-based hypotheses, not verified migrations. Run check against the target contract.");
     }

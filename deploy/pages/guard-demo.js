@@ -1,4 +1,4 @@
-import { checkCompiledContract, compileContract } from './guard-engine.js';
+import { checkCompiledContract, compareExportHeaders, compileContract } from './guard-engine.js';
 
 const section = document.querySelector('#live-demo');
 const controls = section.querySelector('[data-demo-controls]');
@@ -47,15 +47,48 @@ function renderIntegration(result) {
   return item;
 }
 
+function demoCsv() {
+  if (editor.value.length > 65_536) throw new Error('Use the full checker for exports larger than this demo supports.');
+  return editor.value;
+}
+
+function showInputError(error) {
+  editor.setAttribute('aria-invalid', 'true');
+  showStatus('error', 'Could not check this CSV', error.message);
+}
+
+function compareSample() {
+  let changes;
+  try {
+    changes = compareExportHeaders(contract, exportsByName.passing, demoCsv());
+  } catch (error) {
+    showInputError(error);
+    return;
+  }
+
+  editor.removeAttribute('aria-invalid');
+  const changed = changes.added.length || changes.removed.length || changes.reordered;
+  showStatus('compare', changed ? 'Header changes found' : 'Headers match',
+    'Compared with the passing sample. Run check to verify your export against the import rules.');
+  for (const [label, columns] of [['Added columns', changes.added], ['Removed columns', changes.removed]]) {
+    const item = document.createElement('li');
+    const names = columns.slice(0, 12).join(', ');
+    const remaining = columns.length > 12 ? ' and ' + (columns.length - 12) + ' more' : '';
+    item.textContent = label + ': ' + (names || 'None') + remaining;
+    results.append(item);
+  }
+  const order = document.createElement('li');
+  order.textContent = 'Shared column order changed: ' + (changes.reordered ? 'Yes' : 'No');
+  results.append(order);
+}
+
 function runCheck() {
   fix.disabled = editor.value !== exportsByName.breaking;
   let report;
   try {
-    if (editor.value.length > 65_536) throw new Error('Use the full checker for exports larger than this demo supports.');
-    report = checkCompiledContract(contract, editor.value);
+    report = checkCompiledContract(contract, demoCsv());
   } catch (error) {
-    editor.setAttribute('aria-invalid', 'true');
-    showStatus('error', 'Could not check this CSV', error.message);
+    showInputError(error);
     return;
   }
 
@@ -109,6 +142,7 @@ for (const button of controls.querySelectorAll('[data-demo-sample]')) {
   button.addEventListener('click', () => runSample(button.dataset.demoSample));
 }
 controls.querySelector('[data-demo-run]').addEventListener('click', runCheck);
+controls.querySelector('[data-demo-compare]').addEventListener('click', compareSample);
 editor.addEventListener('input', () => {
   fix.disabled = editor.value !== exportsByName.breaking;
   editor.removeAttribute('aria-invalid');

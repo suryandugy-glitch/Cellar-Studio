@@ -2,6 +2,8 @@
 
 Welcome! This ZIP has the **already-built Java checker**. You do not need to compile anything or install Git, Maven or Gradle to run it.
 
+To run the Windows x64 desktop app, download [Cellar-Guard-Windows-x64.exe](https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe) and double-click it. Java is bundled. Open **User manual** or select **Run breaking demo**. The rest of this guide covers the Java ZIP.
+
 ## Step 1 — Install Java 21 or later
 
 Open a terminal (Windows: Command Prompt; macOS/Linux: Terminal), type:
@@ -14,7 +16,7 @@ You need Java **21 or newer**. If the command isn't found or prints version 17/1
 
 ## Step 2 — Open the local Cellar Guard app
 
-- **Windows:** Extract the ZIP, open the extracted `Cellar-Guard-3.1.0` folder, and double-click `start-guard.bat`.
+- **Windows:** Extract the ZIP, open the extracted `Cellar-Guard-3.2.0` folder, and double-click `start-guard.bat`.
 - **macOS/Linux:** Open a terminal inside that folder and run `sh start-guard.sh`.
 
 The black terminal window is the running Java server. Keep it open. Open the exact URL printed there in a browser (usually `http://127.0.0.1:8080`; a different port is possible).

@@ -52,6 +52,11 @@ with sync_playwright() as playwright:
     assert 'BLOCK' in verdict.inner_text()
     assert 'order_id' in demo.locator('[data-demo-results]').inner_text()
     assert 'PASS · finance-summary' in demo.locator('[data-demo-results]').inner_text()
+    demo.get_by_role('button', name='Compare to passing sample').click()
+    assert 'Header changes found' in verdict.inner_text()
+    comparison = demo.locator('[data-demo-results]').inner_text()
+    assert 'Added columns: id' in comparison
+    assert 'Removed columns: order_id' in comparison
     assert fix.is_enabled()
     fix.click()
     assert 'PASS' in verdict.inner_text()

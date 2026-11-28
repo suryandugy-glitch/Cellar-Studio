@@ -74,3 +74,11 @@
 @media (max-width: 740px) {
   .guard-demo-grid { grid-template-columns: minmax(0, 1fr); }
 }
+.guard-demo-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.guard-demo-verdict[data-state="compare"] {
+  padding: .6rem .8rem;
+  border: 2px solid #151515;
+  background: #cbdcff;
+  color: #151515;
+  box-shadow: 3px 3px 0 #151515;
+}
