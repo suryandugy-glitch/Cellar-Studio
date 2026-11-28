@@ -47,17 +47,12 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
-import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.DefaultCaret;
 
+import static io.cellar.desktop.StudioTheme.*;
+
 public final class DesktopApp {
-    private static final Color INK = new Color(0x212133);
-    private static final Color MUTED = new Color(0x535469);
-    private static final Color CANVAS = new Color(0xf5f4fa);
-    private static final Color LINE = new Color(0xd9d8e5);
-    private static final Color ACCENT = new Color(0x423584);
-    private static final Color NAV_TEXT = new Color(0xdedbf3);
     private static final Contract DEMO_CONTRACT = Contract.parse(Demo.CONFIG);
     private static final List<String> SEPARATORS = List.of(",", ";", "\t");
 
@@ -81,10 +76,23 @@ public final class DesktopApp {
     private final JButton leaveDemo = button("Back to my files", 'B', false);
     private final JButton saveReport = button("Save report…", 'P', false);
     private final JButton copyReport = button("Copy report", 'Y', false);
+    private final JButton pickBaseline = button("Choose baseline…", 'N', false);
+    private final JButton pickCandidate = button("Choose new export…", 'U', false);
+    private final JButton compare = button("Compare headers", 'H', true);
+    private final JButton compareSample = button("Compare samples", 'S', false);
+    private final JButton saveComparison = button("Save comparison…", 'G', false);
+    private final JComboBox<String> compareSeparator = new JComboBox<>(new String[]{"Comma (,)", "Semicolon (;)", "Tab"});
+    private final JLabel baselineLabel = label("Select a previous export");
+    private final JLabel candidateLabel = label("Select the new export");
+    private final JLabel comparisonStatus = heading("Choose two exports or try the samples", 18);
+    private final JTextArea comparisonResults = textArea("");
 
     private Contract contract;
     private Path contractPath;
     private Path csvPath;
+    private Path baselinePath;
+    private Path candidatePath;
+    private String comparisonReport;
     private File lastDirectory;
     private boolean demoSelected;
     private boolean demoFixed;
@@ -129,6 +137,7 @@ public final class DesktopApp {
         layout.add(sidebar(), BorderLayout.WEST);
         layout.add(content, BorderLayout.CENTER);
         content.add(workspace(), "check");
+        content.add(comparison(), "compare");
         content.add(manual(), "manual");
         window.setContentPane(layout);
         window.setMinimumSize(new Dimension(780, 540));
@@ -153,7 +162,14 @@ public final class DesktopApp {
         });
         saveReport.addActionListener(event ->
             saveFile("cellar-guard-report.txt", "Text report", "txt", Reports.text(report)));
-        copyReport.addActionListener(event -> copyReport());
+        copyReport.addActionListener(event -> copyText(Reports.text(report)));
+        pickBaseline.addActionListener(event -> pickComparisonFile(true));
+        pickCandidate.addActionListener(event -> pickComparisonFile(false));
+        compare.addActionListener(event -> runComparison(false));
+        compareSample.addActionListener(event -> runComparison(true));
+        compareSeparator.addActionListener(event -> clearComparison());
+        saveComparison.addActionListener(event ->
+            saveFile("cellar-guard-comparison.txt", "Text report", "txt", comparisonReport));
         resultView.addActionListener(event -> renderFindings());
         window.getRootPane().setDefaultButton(check);
         updateButtons();
@@ -169,31 +185,57 @@ public final class DesktopApp {
         sidebar.setPreferredSize(new Dimension(172, 0));
 
         JLabel brand = heading("Cellar Guard", 19);
-        brand.setForeground(Color.WHITE);
+        brand.setForeground(YELLOW);
+        JLabel studio = label("Cellar Studio");
+        studio.setForeground(PAPER);
         sidebar.add(brand);
+        sidebar.add(Box.createVerticalStrut(3));
+        sidebar.add(studio);
         sidebar.add(Box.createVerticalStrut(29));
         JButton workspace = button("CSV checker", 'W', false);
+        JButton comparePage = button("Compare exports", 'A', false);
         JButton help = button("User manual", 'M', false);
-        for (JButton nav : List.of(workspace, help)) {
+        workspace.setBackground(YELLOW);
+        for (JButton nav : List.of(workspace, comparePage, help)) {
             nav.setAlignmentX(Component.LEFT_ALIGNMENT);
             nav.setMaximumSize(new Dimension(Integer.MAX_VALUE, nav.getPreferredSize().height));
             sidebar.add(nav);
             sidebar.add(Box.createVerticalStrut(9));
         }
-        workspace.addActionListener(event -> {
-            pages.show(content, "check");
-            window.getRootPane().setDefaultButton(check);
-        });
-        help.addActionListener(event -> {
-            pages.show(content, "manual");
-            window.getRootPane().setDefaultButton(null);
+        workspace.addActionListener(event -> openPage("check", check));
+        comparePage.addActionListener(event -> openPage("compare", compare));
+        help.addActionListener(event -> openPage("manual", null));
+        content.addPropertyChangeListener("currentPage", event -> {
+            workspace.setBackground(PAPER);
+            comparePage.setBackground(PAPER);
+            help.setBackground(PAPER);
+            switch ((String) event.getNewValue()) {
+                case "check" -> workspace.setBackground(YELLOW);
+                case "compare" -> comparePage.setBackground(YELLOW);
+                default -> help.setBackground(YELLOW);
+            }
         });
 
         sidebar.add(Box.createVerticalGlue());
         JLabel version = label("Version " + Main.VERSION);
-        version.setForeground(NAV_TEXT);
+        version.setForeground(PAPER);
         sidebar.add(version);
         return sidebar;
+    }
+
+    private void openPage(String page, JButton defaultButton) {
+        pages.show(content, page);
+        content.putClientProperty("currentPage", page);
+        window.getRootPane().setDefaultButton(defaultButton);
+    }
+
+    private static JPanel titleCard(String title, String description, Color background) {
+        JPanel titleCard = stack(background);
+        titleCard.setBorder(cardBorder());
+        titleCard.add(heading(title, 29));
+        titleCard.add(label(description));
+        titleCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return titleCard;
     }
 
     private JPanel workspace() {
@@ -202,12 +244,10 @@ public final class DesktopApp {
         page.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
 
         JPanel form = stack(CANVAS);
-        form.add(heading("Check a CSV export", 30));
-        form.add(Box.createVerticalStrut(4));
-        form.add(label("See whether your CSV will work with the system that receives it."));
-        form.add(Box.createVerticalStrut(9));
+        form.add(titleCard("Check a CSV export", "See whether the export meets your customer’s import rules.", YELLOW));
+        form.add(Box.createVerticalStrut(6));
 
-        JPanel inputCard = stack(Color.WHITE);
+        JPanel inputCard = stack(BLUE);
         inputCard.setBorder(cardBorder());
         csvLabel.setToolTipText("Choose the export you want to verify");
         rulesLabel.setToolTipText("Create or import rules that describe the receiving system");
@@ -227,12 +267,13 @@ public final class DesktopApp {
         page.add(form, BorderLayout.NORTH);
 
         JPanel results = new JPanel(new BorderLayout(0, 6));
-        results.setBackground(Color.WHITE);
+        results.setBackground(PAPER);
         results.setBorder(cardBorder());
         JPanel status = new JPanel(new BorderLayout(0, 4));
         status.setOpaque(false);
         JPanel resultTitle = new JPanel(new BorderLayout(9, 0));
         resultTitle.setOpaque(false);
+        decorateVerdict(BLUE);
         resultTitle.add(verdict, BorderLayout.CENTER);
         resultTitle.add(row(copyReport, saveReport), BorderLayout.EAST);
         status.add(resultTitle, BorderLayout.NORTH);
@@ -250,19 +291,117 @@ public final class DesktopApp {
         return page;
     }
 
+    private JPanel comparison() {
+        JPanel page = new JPanel(new BorderLayout(0, 9));
+        page.setBackground(CANVAS);
+        page.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
+        JPanel form = stack(CANVAS);
+        form.add(titleCard("Compare CSV exports", "See which headers were added, removed or reordered.", CORAL));
+        form.add(Box.createVerticalStrut(6));
+
+        JPanel inputs = stack(BLUE);
+        inputs.setBorder(cardBorder());
+        inputs.setAlignmentX(Component.LEFT_ALIGNMENT);
+        inputs.add(comparisonInput(pickBaseline, baselineLabel));
+        inputs.add(comparisonInput(pickCandidate, candidateLabel));
+        inputs.add(row(fieldLabel("Shared separator", compareSeparator), compareSeparator));
+        form.add(inputs);
+        form.add(Box.createVerticalStrut(4));
+        form.add(row(compare, compareSample));
+        page.add(form, BorderLayout.NORTH);
+
+        JPanel result = new JPanel(new BorderLayout(0, 7));
+        result.setBackground(PAPER);
+        result.setBorder(cardBorder());
+        JPanel resultHeader = new JPanel(new BorderLayout(7, 0));
+        resultHeader.setOpaque(false);
+        resultHeader.add(comparisonStatus, BorderLayout.CENTER);
+        resultHeader.add(saveComparison, BorderLayout.EAST);
+        result.add(resultHeader, BorderLayout.NORTH);
+        comparisonResults.getAccessibleContext().setAccessibleName("Header comparison findings");
+        JScrollPane scroll = new JScrollPane(comparisonResults);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        result.add(scroll, BorderLayout.CENTER);
+        page.add(result, BorderLayout.CENTER);
+        return page;
+    }
+
+    private static JPanel comparisonInput(JButton button, JLabel file) {
+        JPanel panel = new JPanel(new BorderLayout(7, 0));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(row(button), BorderLayout.WEST);
+        panel.add(file, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void pickComparisonFile(boolean baseline) {
+        Path path = chooseFile(baseline ? "Choose baseline export" : "Choose new export", "CSV export", "csv");
+        if (path == null) return;
+        if (baseline) {
+            baselinePath = path;
+            setInputLabel(baselineLabel, fileName(path));
+        } else {
+            candidatePath = path;
+            setInputLabel(candidateLabel, fileName(path));
+        }
+        clearComparison();
+    }
+
+    private void clearComparison() {
+        comparisonReport = null;
+        comparisonResults.setText("");
+        comparisonStatus.setText(baselinePath == null || candidatePath == null
+            ? "Choose two exports or try the samples" : "Ready to compare");
+        updateButtons();
+    }
+
+    private void runComparison(boolean sample) {
+        if (busy) return;
+        Path baseline = baselinePath;
+        Path candidate = candidatePath;
+        if (!sample && (baseline == null || candidate == null)) return;
+        int separator = sample ? 0 : compareSeparator.getSelectedIndex();
+        comparisonReport = null;
+        comparisonStatus.setText("Comparing headers…");
+        comparisonResults.setText("");
+        perform(() -> {
+            String before = sample ? Demo.csv(false) : FilesEx.read(baseline);
+            String after = sample ? Demo.csv(true) : FilesEx.read(candidate);
+            return Checker.compareHeaders(before, after, SEPARATORS.get(separator).charAt(0));
+        }, result -> showComparison(result, sample), message -> {
+            comparisonStatus.setText("Could not compare these exports");
+            comparisonResults.setText(message + "\nCheck the chosen files and their shared separator.");
+        });
+    }
+
+    private void showComparison(Checker.HeaderChanges changes, boolean sample) {
+        String title = sample ? "Sample comparison" : "Header comparison";
+        String summary = "Added columns: " + columnsLabel(changes.added())
+            + "\nRemoved columns: " + columnsLabel(changes.removed())
+            + "\nShared column order changed: " + (changes.reordered() ? "Yes" : "No")
+            + "\n\nRun the CSV checker with your import rules to verify the new export.";
+        comparisonStatus.setText(title);
+        comparisonResults.setText(summary);
+        comparisonResults.setCaretPosition(0);
+        comparisonReport = title + "\n\n" + summary;
+    }
+
+    private static String columnsLabel(List<String> names) {
+        return names.isEmpty() ? "None" : String.join(", ", names);
+    }
+
     private JPanel manual() {
         JPanel page = new JPanel(new BorderLayout(0, 11));
         page.setBackground(CANVAS);
         page.setBorder(BorderFactory.createEmptyBorder(22, 24, 20, 24));
-        JLabel title = heading("User manual", 30);
-        page.add(title, BorderLayout.NORTH);
+        page.add(titleCard("User manual", "Follow the sample or check your own export.", CORAL), BorderLayout.NORTH);
         JTextArea instructions;
         try (var resource = Objects.requireNonNull(DesktopApp.class.getResourceAsStream("/desktop/manual.txt"))) {
             instructions = textArea(new String(resource.readAllBytes(), StandardCharsets.UTF_8));
         } catch (IOException error) {
             throw new IllegalStateException("Could not load the built-in manual", error);
         }
-        title.setLabelFor(instructions);
         instructions.getAccessibleContext().setAccessibleName("Cellar Guard user manual");
         instructions.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 13));
         instructions.setCaretPosition(0);
@@ -271,8 +410,7 @@ public final class DesktopApp {
         page.add(scroll, BorderLayout.CENTER);
         JButton tryDemo = button("Run breaking demo", 'T', true);
         tryDemo.addActionListener(event -> {
-            pages.show(content, "check");
-            window.getRootPane().setDefaultButton(check);
+            openPage("check", check);
             if (!busy) startDemo();
         });
         page.add(row(tryDemo), BorderLayout.SOUTH);
@@ -479,7 +617,7 @@ public final class DesktopApp {
         String title = blocked ? "BLOCK · Changes needed" : passed ? "PASS · Export meets the rules"
             : "WARN · Review findings";
         verdict.setText(title);
-        verdict.setForeground(blocked ? new Color(0x962e3e) : passed ? new Color(0x176245) : new Color(0x735000));
+        decorateVerdict(blocked ? CORAL : passed ? BLUE : YELLOW);
         String detail = blocked ? "Review the issue below, correct the export, and check it again."
             : passed ? "All selected integrations passed." : "Only advisory integrations reported issues.";
         if (demoSelected && blocked) detail = "The inventory importer expects order_id. Apply the demo fix to compare results.";
@@ -577,9 +715,16 @@ public final class DesktopApp {
         findings.setCaretPosition(0);
     }
 
+    private void decorateVerdict(Color color) {
+        verdict.setForeground(INK);
+        verdict.setBackground(color);
+        verdict.setOpaque(true);
+        verdict.setBorder(boxBorder(2, 2, 3, 8));
+    }
+
     private void resetResult(String title, String detail) {
         verdict.setText(title);
-        verdict.setForeground(INK);
+        decorateVerdict(BLUE);
         feedback.setText(detail);
         findings.setText("");
         resultCounts.setText("");
@@ -601,11 +746,17 @@ public final class DesktopApp {
         saveReport.setEnabled(!busy && report != null);
         copyReport.setEnabled(!busy && report != null);
         resultView.setEnabled(!busy && report != null);
+        pickBaseline.setEnabled(!busy);
+        pickCandidate.setEnabled(!busy);
+        compareSeparator.setEnabled(!busy);
+        compare.setEnabled(!busy && baselinePath != null && candidatePath != null);
+        compareSample.setEnabled(!busy);
+        saveComparison.setEnabled(!busy && comparisonReport != null);
     }
 
-    private void copyReport() {
+    private void copyText(String reportText) {
         try {
-            StringSelection text = new StringSelection(Reports.text(report));
+            StringSelection text = new StringSelection(reportText);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(text, null);
             JOptionPane.showMessageDialog(window, "Report copied to the clipboard.", "Cellar Guard",
                 JOptionPane.INFORMATION_MESSAGE);
@@ -631,7 +782,7 @@ public final class DesktopApp {
         Path target = selected.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith("." + extension)
             ? selected : selected.resolveSibling(selected.getFileName() + "." + extension);
         try {
-            for (Path input : new Path[]{csvPath, contractPath}) {
+            for (Path input : new Path[]{csvPath, contractPath, baselinePath, candidatePath}) {
                 if (input != null && (target.toAbsolutePath().normalize().equals(input.toAbsolutePath().normalize())
                     || (Files.exists(target) && Files.isSameFile(target, input)))) {
                     throw new InputError("Choose a different filename to preserve the original input.");
@@ -683,20 +834,6 @@ public final class DesktopApp {
         return label;
     }
 
-    private static Font uiFont(int size, int style) {
-        return UIManager.getFont("Label.font").deriveFont(style, (float) size);
-    }
-
-    private static JButton button(String content, char key, boolean primary) {
-        JButton button = new JButton(content);
-        button.setMnemonic(key);
-        button.setFont(uiFont(13, Font.BOLD));
-        button.setBackground(primary ? ACCENT : Color.WHITE);
-        button.setForeground(primary ? Color.WHITE : INK);
-        button.setMargin(new java.awt.Insets(6, 10, 6, 10));
-        return button;
-    }
-
     private static JPanel stack(Color background) {
         JPanel panel = new JPanel();
         panel.setBackground(background);
@@ -712,14 +849,10 @@ public final class DesktopApp {
         return panel;
     }
 
-    private static javax.swing.border.Border cardBorder() {
-        return BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(LINE),
-            BorderFactory.createEmptyBorder(11, 11, 11, 11));
-    }
-
     private static JTextArea textArea(String content) {
         JTextArea area = new JTextArea(content);
         area.setForeground(INK);
+        area.setBackground(PAPER);
         area.setFont(uiFont(14, Font.PLAIN));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
@@ -739,7 +872,20 @@ public final class DesktopApp {
         SwingUtilities.invokeLater(start);
         DesktopApp app = start.get(20, TimeUnit.SECONDS);
         try {
-            SwingUtilities.invokeAndWait(app.demo::doClick);
+            SwingUtilities.invokeAndWait(() -> {
+                app.openPage("compare", app.compare);
+                app.compareSample.doClick();
+            });
+            app.awaitStatus(app.comparisonStatus, "Sample comparison");
+            SwingUtilities.invokeAndWait(() -> {
+                if (!app.comparisonResults.getText().contains("Removed columns: order_id")
+                    || !app.comparisonResults.getText().contains("Added columns: id")
+                    || !app.saveComparison.isEnabled()) {
+                    throw new IllegalStateException("The sample comparison did not report the changed columns");
+                }
+                app.openPage("check", app.check);
+                app.demo.doClick();
+            });
             app.awaitVerdict("BLOCK");
             SwingUtilities.invokeAndWait(() -> {
                 app.resultView.setSelectedItem(ResultView.ISSUES);
@@ -764,6 +910,21 @@ public final class DesktopApp {
                     throw new IllegalStateException("Quoted baseline headers were not read correctly");
                 }
                 Contract starter = makeRules(draft.name(), draft.columns(), draft.separator());
+                Files.writeString(csv, "amount;\"customer;code\"\n100;A\n");
+                SwingUtilities.invokeAndWait(() -> {
+                    app.openPage("compare", app.compare);
+                    app.baselinePath = baseline;
+                    app.candidatePath = csv;
+                    app.compareSeparator.setSelectedIndex(1);
+                    app.compare.doClick();
+                });
+                app.awaitStatus(app.comparisonStatus, "Header comparison");
+                SwingUtilities.invokeAndWait(() -> {
+                    if (!app.comparisonResults.getText().contains("Shared column order changed: Yes")) {
+                        throw new IllegalStateException("File comparison did not report the reordered columns");
+                    }
+                    app.openPage("check", app.check);
+                });
                 Files.writeString(csv, "\"customer;code\";amount\nA;100\n");
                 SwingUtilities.invokeAndWait(() -> {
                     app.useCsv(csv);
@@ -822,9 +983,13 @@ public final class DesktopApp {
     }
 
     private void awaitVerdict(String expected) throws Exception {
+        awaitStatus(verdict, expected);
+    }
+
+    private void awaitStatus(JLabel label, String expected) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         do {
-            var status = new FutureTask<>(() -> busy ? "" : verdict.getText());
+            var status = new FutureTask<>(() -> busy ? "" : label.getText());
             SwingUtilities.invokeLater(status);
             String result = status.get(5, TimeUnit.SECONDS);
             if (result.startsWith(expected)) return;

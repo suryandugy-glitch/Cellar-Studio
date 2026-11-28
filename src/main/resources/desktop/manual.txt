@@ -10,6 +10,12 @@ Check your own export
 3. Click Use these rules. If you already have a Cellar Guard contract, you can use Import JSON instead. The check starts once the CSV and rules are ready.
 4. Correct the export at its source. If you saved changes to the selected CSV or JSON, click Check export to reread both files. Choose CSV again when you generate a file with a new name.
 
+Compare two exports
+
+1. Open Compare exports. Pick a previous export and the new export, or click Compare samples to see a column rename.
+2. For your files, choose their shared separator and click Compare headers. See added and removed columns and changes to the order of columns both files share.
+3. Save comparison to share the text report. Run CSV checker with the customer's import rules to check values and confirm compatibility.
+
 Read and share the result
 
 PASS means every integration met its rules.

@@ -2,6 +2,8 @@
 
 ## Windows desktop app
 
+The desktop app uses Cellar Studio’s cream, yellow, blue and coral palette, bold outlines and high-contrast cards. Open **Compare exports** to inspect added, removed or reordered headers and save a text report. Try **Compare samples** for a worked example.
+
 Double-click **Cellar-Guard-Windows-x64.exe** to open the checker. The executable includes Java and runs offline. It opens directly from your Downloads folder on 64-bit Windows.
 
 - Select **Run breaking demo** to see which integration rejects a renamed header, then select **Apply demo fix & recheck** to see it pass.

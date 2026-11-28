@@ -328,6 +328,18 @@ export function checkCompiledContract({ delimiter, integrations, checkRows }, cs
   return { passed, blocking, rowsChecked: checkRows ? rows.length : null, header, results };
 }
 
+export function compareExportHeaders({ delimiter }, baselineCsv, candidateCsv) {
+  const baseline = parseCsv(baselineCsv, delimiter, false).header;
+  const candidate = parseCsv(candidateCsv, delimiter, false).header;
+  const previous = new Set(baseline);
+  const current = new Set(candidate);
+  const added = candidate.filter(column => !previous.has(column));
+  const removed = baseline.filter(column => !current.has(column));
+  const beforeOrder = baseline.filter(column => current.has(column));
+  const afterOrder = candidate.filter(column => previous.has(column));
+  return { added, removed, reordered: beforeOrder.some((column, index) => column !== afterOrder[index]) };
+}
+
 export function draftHeaderContract(csv, delimiter) {
   requireInput([',', ';', '\t'].includes(delimiter), 'Choose a valid CSV delimiter.');
   const { header } = parseCsv(csv, delimiter, true);
