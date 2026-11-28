@@ -12,6 +12,5 @@ export function accountConfig(env = process.env) {
 
   const providers = {};
   if (env.CELLAR_AUTH_GOOGLE === '1') providers.google = 'google';
-  if (env.CELLAR_AUTH_MICROSOFT === '1') providers.microsoft = 'azure';
   return { url: service.origin, origin: origin.origin, key, providers };
 }

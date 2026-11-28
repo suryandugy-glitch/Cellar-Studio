@@ -144,11 +144,33 @@ html[data-theme="dark"] .account-page {
 .account-providers button:hover:not(:disabled) { background: var(--account-soft); }
 .account-provider-status { color: var(--account-muted); font-size: 13px; margin: 10px 0 0; }
 .provider-google { color: #2457c6; font-weight: 850; font-size: 16px; width: 16px; line-height: 1; text-align: center; background: #fff; border-radius: 50%; }
-.provider-microsoft { display: grid; grid-template-columns: repeat(2, 7px); grid-auto-rows: 7px; gap: 1px; }
-.provider-microsoft i:nth-child(1) { background: #f25022; }
-.provider-microsoft i:nth-child(2) { background: #7fba00; }
-.provider-microsoft i:nth-child(3) { background: #00a4ef; }
-.provider-microsoft i:nth-child(4) { background: #ffb900; }
+.account-flow-links{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin:12px 0 0}
+.account-flow-links a,.account-link-button{color:#5140a5;font:700 14px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:4px}
+.account-link-button{appearance:none;background:none;border:0;padding:0;cursor:pointer}
+.account-flow-links a:hover,.account-link-button:hover{color:#39287e}
+.account-switch{color:var(--account-muted);font-size:14px;margin:18px 0 4px}
+html[data-theme="dark"] .account-flow-links a,html[data-theme="dark"] .account-link-button{color:#c3b6ff}
+
+/* Compact email-first sign-in, with the Studio identity clearly visible. */
+body.account-page[data-account-page="signin"]{
+  --account-bg:#f5f5f2;--account-ink:#161616;--account-muted:#555650;
+  --account-line:#d2d2cd;--account-soft:#f5f5f3;
+  --account-focus:#6046b4;
+}
+html[data-theme="dark"] body.account-page[data-account-page="signin"]{
+  --account-bg:#171719;--account-ink:#f7f5f1;--account-muted:#d3d0c9;
+  --account-line:#59585c;--account-soft:#252528;--account-focus:#c3b6ff;
+}
+body.account-page[data-account-page="signin"] .account-main{width:min(480px,calc(100% - 32px));display:block;padding-block:clamp(38px,7vw,88px)}
+body.account-page[data-account-page="signin"] .account-intro{display:none}
+body.account-page[data-account-page="signin"] .account-card{padding:clamp(27px,5vw,48px);border-radius:4px;box-shadow:0 12px 36px #00000014}
+body.account-page[data-account-page="signin"] .account-card h2{font-size:34px;letter-spacing:-.045em;margin-bottom:12px}
+body.account-page[data-account-page="signin"] .account-hint{font-size:16px;margin-bottom:24px}
+body.account-page[data-account-page="signin"] .account-card label{font-size:14px}
+body.account-page[data-account-page="signin"] .account-card input:not([type="checkbox"]){min-height:48px;border-radius:2px}
+body.account-page[data-account-page="signin"] .account-primary{width:auto;min-width:118px;margin:13px 0 0 auto;justify-content:center;gap:15px;background:#222;border-color:#222;border-radius:3px}
+body.account-page[data-account-page="signin"] .account-primary:hover{background:#40317a;border-color:#40317a}
+body.account-page[data-account-page="signin"] .account-providers button{border-radius:3px}
 .account-guest { display: inline-block; padding: 3px 0; margin-top: 15px; color: var(--account-muted); background: none; border: 0; font: 650 13px/1.3 system-ui, sans-serif; text-decoration: underline; text-underline-offset: 4px; }
 .account-status { margin: 11px 0 0; padding: 8px 10px; color: var(--account-ink); background: var(--account-soft); border-radius: 5px; font-size: 13px; }
 .account-status[data-state="error"] { background: var(--account-error-bg); color: var(--account-error); }

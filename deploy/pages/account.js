@@ -139,26 +139,42 @@ async function signInPage() {
   const providers = [...document.querySelectorAll('[data-provider]')];
   const fields = element('account-fields');
   const name = element('account-name');
+  const email = element('account-email');
   const password = element('account-password');
   const remember = element('account-remember');
   const providerStatus = element('provider-status');
   let mode = 'signin';
+  let step = 'email';
   let available = false;
   const enabledProviders = new Set();
+
+  function setStep(next) {
+    step = next;
+    const details = step === 'details';
+    element('email-field').hidden = details;
+    element('password-field').hidden = !details;
+    element('name-field').hidden = !details || mode !== 'signup';
+    element('account-back').hidden = !details;
+    password.disabled = !details;
+    name.disabled = !details || mode !== 'signup';
+    name.required = details && mode === 'signup';
+    element('account-submit').firstChild.textContent = details ? (mode === 'signup' ? 'Create account ' : 'Sign in ') : 'Next ';
+    element('account-hint').textContent = details
+      ? (mode === 'signup' ? `Create your account for ${email.value.trim()}.` : `Enter your password for ${email.value.trim()}.`)
+      : (mode === 'signup' ? 'Enter your email address to create an account.' : 'Use your Cellar Studio account.');
+    element('account-title').textContent = mode === 'signup' ? 'Create your account' : 'Sign in';
+    if (details) (mode === 'signup' ? name : password).focus();
+  }
 
   function setMode(next) {
     mode = next;
     const signup = mode === 'signup';
-    for (const button of modes) button.setAttribute('aria-pressed', String(button.dataset.accountMode === mode));
-    element('name-field').hidden = !signup;
-    name.disabled = !signup;
-    name.required = signup;
-    element('account-hint').textContent = signup ? 'Verify your email to activate your account.' : 'Enter your email and password to continue.';
-    const label = signup ? 'Create account' : 'Sign in';
-    element('account-submit').firstChild.textContent = label + ' ';
+    element('account-switch-signup').hidden = signup;
+    element('account-switch-signin').hidden = !signup;
     password.autocomplete = signup ? 'new-password' : 'current-password';
     password.minLength = signup ? 12 : 0;
     password.value = '';
+    setStep('email');
     message();
   }
 
@@ -170,12 +186,21 @@ async function signInPage() {
   }
 
   for (const button of modes) button.addEventListener('click', () => setMode(button.dataset.accountMode));
+  element('account-back').addEventListener('click', () => {
+    setStep('email');
+    email.focus();
+  });
   const params = new URLSearchParams(location.search);
   setMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
 
   element('auth-form').addEventListener('submit', async event => {
     event.preventDefault();
     if (!available) return;
+    if (step === 'email') {
+      if (!email.reportValidity()) return;
+      setStep('details');
+      return;
+    }
     const form = Object.fromEntries(new FormData(event.currentTarget));
     busy(true);
     message();
@@ -215,10 +240,7 @@ async function signInPage() {
     const pending = providers.filter(button => !enabledProviders.has(button.dataset.provider));
     providerStatus.hidden = pending.length === 0;
     if (pending.length === providers.length) {
-      providerStatus.textContent = 'Google and Microsoft sign-in are awaiting setup.';
-    } else if (pending.length === 1) {
-      const providerName = pending[0].dataset.provider === 'google' ? 'Google' : 'Microsoft';
-      providerStatus.textContent = `${providerName} sign-in is awaiting setup.`;
+      providerStatus.textContent = 'Google sign-in is awaiting setup.';
     }
     element('remember-field').hidden = !available;
     element('email-account').hidden = !available;

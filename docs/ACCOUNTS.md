@@ -1,6 +1,6 @@
 # Enable Cellar Studio accounts
 
-Cellar Studio uses Supabase Auth to store accounts and manage passwords. The Vercel account endpoint uses PKCE for Google and Microsoft, verifies the session on the server, and stores it in Secure, HttpOnly cookies. The account page currently shows a name and email address. Cellar Guard files and rules use the existing browser or Java storage.
+Cellar Studio uses Supabase Auth to store accounts and manage passwords. The Vercel account endpoint uses PKCE for Google, verifies the session on the server, and stores it in Secure, HttpOnly cookies. The account page currently shows a name and email address. Cellar Guard files and rules use the existing browser or Java storage.
 
 ## Supabase
 
@@ -20,12 +20,11 @@ Cellar Studio uses Supabase Auth to store accounts and manage passwords. The Ver
 
    Opening the link verifies the email address. The user then signs in on Cellar Studio.
 
-## Google and Microsoft
+## Google
 
 - In Google Cloud, create an OAuth **Web application** credential. Add the Supabase callback shown on the Google provider page, typically `https://PROJECT_REF.supabase.co/auth/v1/callback`, to **Authorized redirect URIs**. Configure the audience for the intended users and paste the client ID and secret into Supabase Authentication → Sign In / Providers → Google.
-- In Microsoft Entra, create an app registration and choose **Accounts in any organizational directory and personal Microsoft accounts** to allow both. Add the Supabase callback shown on the Azure provider page as a **Web** redirect URI. Put the client ID and client-secret **value** into Supabase Authentication → Sign In / Providers → Azure. The app requests the `email` scope.
 
-[Google setup](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) · [Microsoft setup](https://supabase.com/docs/guides/auth/social-sign-in/auth-azure) · [Production email delivery](https://supabase.com/docs/guides/auth/auth-smtp)
+[Google setup](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) · [Production email delivery](https://supabase.com/docs/guides/auth/auth-smtp)
 
 ## Vercel
 
@@ -35,9 +34,8 @@ Cellar Studio uses Supabase Auth to store accounts and manage passwords. The Ver
 | `CELLAR_SUPABASE_PUBLISHABLE_KEY` | Supabase `sb_publishable_…` key |
 | `CELLAR_AUTH_ORIGIN` | `https://cellar-csv.vercel.app` |
 | `CELLAR_AUTH_GOOGLE` | `1` once the Google provider is set up |
-| `CELLAR_AUTH_MICROSOFT` | `1` once the Azure provider is set up |
 | `CELLAR_AUTH_LANDING` | `1` after verifying sign-in at `/signin.html` |
 
-Keep the Google and Microsoft client secrets in Supabase. Deploy after setting the variables. Open `/signin.html` and check signup, email verification, all enabled providers, the account page, and sign-out. Test **Keep me signed in** by closing and reopening the browser. A valid session automatically opens the account page when the user returns to the sign-in landing.
+Keep the Google client secret in Supabase. Deploy after setting the variables. Open `/signin.html` and check signup, email verification, Google, the account page, and sign-out. Test **Keep me signed in** by closing and reopening the browser. A valid session automatically opens the account page when the user returns to the sign-in landing.
 
 When `CELLAR_AUTH_LANDING` is enabled and the Supabase variables are present, the sign-in page is published at `/`. **Continue as a guest** opens `/studio.html`. The public products, checker and help pages remain directly accessible. To restore the public homepage, remove `CELLAR_AUTH_LANDING` and redeploy.

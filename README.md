@@ -26,7 +26,7 @@
 
 ## Cellar Studio accounts
 
-The [sign-in page](https://cellar-csv.vercel.app/signin.html) supports email registration and verification, Google and Microsoft OAuth, and a **Keep me signed in** option. Returning users with a valid session open their account automatically. Guests can continue to the public studio. Accounts and the sign-in landing are activated through the [Supabase and Vercel setup guide](docs/ACCOUNTS.md).
+The [sign-in page](https://cellar-csv.vercel.app/signin.html) is the production landing screen. It uses an email-first flow (email → password), registration and email verification, Google OAuth, and an optional **Keep me signed in** setting. Microsoft sign-in is not offered. Supabase Auth securely stores user accounts and password hashes, while server-managed cookies remember valid sessions. Guests can still explore the studio. See the [Supabase and Vercel setup guide](docs/ACCOUNTS.md).
 
 ## Products
 

@@ -7,7 +7,7 @@ const config = {
   url: 'https://project.supabase.co',
   origin: 'https://cellar-csv.vercel.app',
   key: 'sb_publishable_test',
-  providers: { google: 'google', microsoft: 'azure' },
+  providers: { google: 'google' },
 };
 const profile = {
   email: 'test@example.net',
@@ -69,7 +69,7 @@ async function call(handler, action, options = {}) {
 test('account configuration requires a publishable key and HTTPS', () => {
   assert.equal(accountConfig({}), null);
   assert.throws(() => accountConfig({ CELLAR_SUPABASE_URL: config.url, CELLAR_SUPABASE_PUBLISHABLE_KEY: 'secret' }), /publishable key/);
-  assert.equal(accountConfig({ CELLAR_SUPABASE_URL: config.url, CELLAR_SUPABASE_PUBLISHABLE_KEY: config.key, CELLAR_AUTH_MICROSOFT: '1' }).providers.microsoft, 'azure');
+  assert.deepEqual(accountConfig({ CELLAR_SUPABASE_URL: config.url, CELLAR_SUPABASE_PUBLISHABLE_KEY: config.key, CELLAR_AUTH_MICROSOFT: '1' }).providers, {});
 });
 
 test('unconfigured accounts leave guest browsing available and reject writes', async () => {
@@ -93,15 +93,14 @@ test('email registration requires confirmation and rejects a cross-site POST', a
   assert.equal(confirmed.headers.get('Set-Cookie'), undefined);
 });
 
-test('Google and Microsoft return only the configured authorize origin with session-bound callbacks', async () => {
+test('Google returns only the configured authorize origin with session-bound callbacks', async () => {
   const { handler, calls } = mockHandler();
   for (const [provider, name] of Object.entries(config.providers)) {
     const result = await call(handler, 'oauth', { body: { provider, remember: true } });
     assert.equal(result.data.url, config.url + '/auth/v1/authorize?provider=' + name);
     assert.ok(result.headers.get('Set-Cookie').every(value => /Max-Age=900; Path=\/; HttpOnly; Secure; SameSite=Lax/.test(value)));
   }
-  assert.equal(calls[1][2].scopes, 'email');
-  assert.equal(calls[1][2].redirectTo, config.origin + '/api/account?action=callback');
+  assert.equal(calls[0][2].redirectTo, config.origin + '/api/account?action=callback');
   const unbound = await call(handler, 'callback&code=once');
   assert.equal(unbound.headers.get('Location'), '/signin.html?notice=provider');
   const bound = await call(handler, 'callback&code=once', { headers: { cookie: '__Host-cellar-signin=keep' } });
@@ -111,10 +110,10 @@ test('Google and Microsoft return only the configured authorize origin with sess
 
 test('the real Supabase client generates a PKCE verifier and authorization challenge', async () => {
   const handler = buildAccountHandler({ getConfig: () => config });
-  const result = await call(handler, 'oauth', { body: { provider: 'microsoft' } });
+  const result = await call(handler, 'oauth', { body: { provider: 'google' } });
   assert.equal(result.status, 200);
   const url = new URL(result.data.url);
-  assert.equal(url.searchParams.get('provider'), 'azure');
+  assert.equal(url.searchParams.get('provider'), 'google');
   assert.equal(url.searchParams.get('code_challenge_method'), 's256');
   assert.ok(url.searchParams.get('code_challenge').length > 30);
   assert.ok(result.headers.get('Set-Cookie').some(value => value.startsWith('__Host-cellar-session-code-verifier=')));
