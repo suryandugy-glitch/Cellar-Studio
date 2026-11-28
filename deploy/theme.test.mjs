@@ -36,6 +36,7 @@ for (const file of files) {
   }
 }
 const index = await readFile(resolve(root, 'index.html'), 'utf8');
+assert.match(index, /name="google-site-verification"/, 'Search Console verification must be on the public root');
 const studio = await readFile(resolve(root, 'studio.html'), 'utf8');
 const signIn = await readFile(resolve(root, 'signin.html'), 'utf8');
 assert.doesNotMatch(index, /data-account-page="signin"/, 'Company home must not masquerade as a login gate');
