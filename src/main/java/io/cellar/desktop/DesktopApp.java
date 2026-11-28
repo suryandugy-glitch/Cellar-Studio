@@ -59,7 +59,7 @@ public final class DesktopApp {
     private final JFrame window = new JFrame("Cellar Guard");
     private final CardLayout pages = new CardLayout();
     private final JPanel content = new JPanel(pages);
-    private final JLabel verdict = heading("Ready to check", 21);
+    private final JLabel verdict = heading("Ready to check", 19);
     private final JLabel feedback = label("Choose a CSV and add its import rules, or try the built-in demo.");
     private final JLabel csvLabel = label("No CSV selected");
     private final JLabel rulesLabel = label("No rules loaded");
@@ -77,10 +77,10 @@ public final class DesktopApp {
     private final JButton saveReport = button("Save report…", 'P', false);
     private final JButton copyReport = button("Copy report", 'Y', false);
     private final JButton pickBaseline = button("Choose baseline…", 'N', false);
-    private final JButton pickCandidate = button("Choose new export…", 'U', false);
+    private final JButton pickCandidate = button("Choose new export…", 'X', false);
     private final JButton compare = button("Compare headers", 'H', true);
     private final JButton compareSample = button("Compare samples", 'S', false);
-    private final JButton saveComparison = button("Save comparison…", 'G', false);
+    private final JButton saveComparison = button("Save comparison…", 'P', false);
     private final JComboBox<String> compareSeparator = new JComboBox<>(new String[]{"Comma (,)", "Semicolon (;)", "Tab"});
     private final JLabel baselineLabel = label("Select a previous export");
     private final JLabel candidateLabel = label("Select the new export");
@@ -181,7 +181,7 @@ public final class DesktopApp {
 
     private JPanel sidebar() {
         JPanel sidebar = stack(INK);
-        sidebar.setBorder(BorderFactory.createEmptyBorder(25, 19, 19, 19));
+        sidebar.setBorder(BorderFactory.createEmptyBorder(25, 12, 19, 12));
         sidebar.setPreferredSize(new Dimension(172, 0));
 
         JLabel brand = heading("Cellar Guard", 19);
@@ -235,6 +235,7 @@ public final class DesktopApp {
         titleCard.add(heading(title, 29));
         titleCard.add(label(description));
         titleCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, titleCard.getPreferredSize().height));
         return titleCard;
     }
 
