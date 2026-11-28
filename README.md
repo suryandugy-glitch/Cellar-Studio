@@ -70,7 +70,7 @@ Open [Ask Cellar](https://cellar-csv.vercel.app/studio.html?ask=1) on your phone
 
 ### Download and run
 
-**Windows x64:** Double-click [Cellar-Guard-Windows-x64.exe](https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe). The desktop app includes Java and opens without a browser. Click **Run breaking demo** and then **Apply demo fix & recheck**, or click **User manual**. To check your own export, choose a CSV and create rules in the app or import an existing JSON contract.
+**Windows x64:** Double-click [Cellar-Guard-Windows-x64.exe](https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe). The desktop app includes Java and opens without a browser. Click **Run breaking demo** and then **Apply demo fix & recheck**, or click **User manual**. Choose a CSV and create rules from scratch, load headers from a known-good export, or import JSON. Checks start when both inputs are ready. Use the results menu to see issues or inspect headers, then copy or save the full report.
 
 **Java ZIP and CLI:** Download **Cellar-Guard-3.2.0.zip** from the [Cellar Guard release](https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0) and extract it. With Java 21 or newer installed, open the browser workspace using `start-guard.bat` on Windows or `sh start-guard.sh` on macOS/Linux. See `START_HERE.md` in the ZIP for the sample CSVs, contract and command-line walkthrough.
 

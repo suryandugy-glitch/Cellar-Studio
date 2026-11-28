@@ -5,8 +5,9 @@
 Double-click **Cellar-Guard-Windows-x64.exe** to open the checker. The executable includes Java and runs offline. It opens directly from your Downloads folder on 64-bit Windows.
 
 - Select **Run breaking demo** to see which integration rejects a renamed header, then select **Apply demo fix & recheck** to see it pass.
-- To run your own check, select **Choose CSV** and **Create rules**, or import an existing JSON contract. Select **Check export** and follow the finding for each affected integration.
-- Save your rules and report for later use. Open the built-in **User manual** for step-by-step instructions and help reading results.
+- Select **Choose CSV** and **Create rules**, or import an existing JSON contract. Use **Load headers from CSV** to start with a known-good export. Checks start when both inputs are ready.
+- Filter results to issues, see the export’s column names, or copy and save the full report. Open the built-in **User manual** for instructions.
+- **Check export** rereads both files. CSV and contract errors tell you which file to fix and clear the previous report.
 
 The Windows executable is unsigned. The release includes its SHA-256 checksum. The bundled runtime is Eclipse Temurin 21.0.13.1+2. Its license files are included in the package, and its [corresponding source archive](https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jdk-sources_21.0.13.1_2.tar.gz) is available from Eclipse Adoptium.
 

@@ -2,6 +2,7 @@ package io.cellar.desktop;
 
 import io.cellar.Checker;
 import io.cellar.Contract;
+import io.cellar.Csv;
 import io.cellar.Demo;
 import io.cellar.FilesEx;
 import io.cellar.InputError;
@@ -16,6 +17,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +59,7 @@ public final class DesktopApp {
     private static final Color ACCENT = new Color(0x423584);
     private static final Color NAV_TEXT = new Color(0xdedbf3);
     private static final Contract DEMO_CONTRACT = Contract.parse(Demo.CONFIG);
+    private static final List<String> SEPARATORS = List.of(",", ";", "\t");
 
     private final JFrame window = new JFrame("Cellar Guard");
     private final CardLayout pages = new CardLayout();
@@ -64,7 +68,9 @@ public final class DesktopApp {
     private final JLabel feedback = label("Choose a CSV and add its import rules, or try the built-in demo.");
     private final JLabel csvLabel = label("No CSV selected");
     private final JLabel rulesLabel = label("No rules loaded");
+    private final JLabel resultCounts = label("");
     private final JTextArea findings = textArea("");
+    private final JComboBox<ResultView> resultView = new JComboBox<>(ResultView.values());
     private final JButton chooseCsv = button("Choose CSV…", 'C', false);
     private final JButton buildRules = button("Create rules…", 'R', false);
     private final JButton importRules = button("Import JSON…", 'I', false);
@@ -74,15 +80,31 @@ public final class DesktopApp {
     private final JButton fixDemo = button("Apply demo fix & recheck", 'F', false);
     private final JButton leaveDemo = button("Back to my files", 'B', false);
     private final JButton saveReport = button("Save report…", 'P', false);
+    private final JButton copyReport = button("Copy report", 'Y', false);
 
     private Contract contract;
     private Path contractPath;
     private Path csvPath;
+    private File lastDirectory;
     private boolean demoSelected;
     private boolean demoFixed;
     private boolean busy;
-    private String report;
+    private Map<String, Object> report;
 
+    private enum ResultView {
+        ALL("All integrations"), ISSUES("Issues only"), COLUMNS("CSV columns");
+        private final String label;
+
+        ResultView(String label) {
+            this.label = label;
+        }
+
+        @Override public String toString() {
+            return label;
+        }
+    }
+
+    private record RuleDraft(String name, String columns, int separator) {}
     public static void main(String[] args) throws Exception {
         if (args.length == 1 && args[0].equals("--smoke-test")) {
             smokeTest();
@@ -115,7 +137,7 @@ public final class DesktopApp {
         window.setLocationRelativeTo(null);
 
         chooseCsv.addActionListener(event -> selectCsv());
-        buildRules.addActionListener(event -> createRules());
+        buildRules.addActionListener(event -> editRules(new RuleDraft("customer-import", "", 0)));
         importRules.addActionListener(event -> loadRules());
         saveRules.addActionListener(event -> saveFile("cellar-rules.json", "JSON contract", "json", activeContract().canonical()));
         check.addActionListener(event -> runCheck());
@@ -129,7 +151,10 @@ public final class DesktopApp {
             demoSelected = false;
             inputsChanged();
         });
-        saveReport.addActionListener(event -> saveFile("cellar-guard-report.txt", "Text report", "txt", report));
+        saveReport.addActionListener(event ->
+            saveFile("cellar-guard-report.txt", "Text report", "txt", Reports.text(report)));
+        copyReport.addActionListener(event -> copyReport());
+        resultView.addActionListener(event -> renderFindings());
         window.getRootPane().setDefaultButton(check);
         updateButtons();
     }
@@ -209,9 +234,12 @@ public final class DesktopApp {
         JPanel resultTitle = new JPanel(new BorderLayout(9, 0));
         resultTitle.setOpaque(false);
         resultTitle.add(verdict, BorderLayout.CENTER);
-        resultTitle.add(saveReport, BorderLayout.EAST);
+        resultTitle.add(row(copyReport, saveReport), BorderLayout.EAST);
         status.add(resultTitle, BorderLayout.NORTH);
-        status.add(feedback, BorderLayout.SOUTH);
+        status.add(feedback, BorderLayout.CENTER);
+        resultView.getAccessibleContext().setAccessibleName("Result view");
+        resultView.setToolTipText("View all integrations, issues only, or the CSV column names");
+        status.add(row(resultView, resultCounts), BorderLayout.SOUTH);
         results.add(status, BorderLayout.NORTH);
         findings.setRows(4);
         findings.getAccessibleContext().setAccessibleName("Check findings");
@@ -253,7 +281,10 @@ public final class DesktopApp {
 
     private void selectCsv() {
         Path selected = chooseFile("Choose CSV export", "CSV export", "csv");
-        if (selected == null) return;
+        if (selected != null) useCsv(selected);
+    }
+
+    private void useCsv(Path selected) {
         demoSelected = false;
         csvPath = selected;
         inputsChanged();
@@ -261,16 +292,23 @@ public final class DesktopApp {
 
     private void loadRules() {
         Path selected = chooseFile("Import Cellar Guard rules", "JSON contract", "json");
-        if (selected == null) return;
-        perform(() -> Contract.parse(FilesEx.read(selected)), loaded -> acceptRules(loaded, selected));
+        if (selected != null) useImportedRules(selected);
     }
 
-    private void createRules() {
-        JTextArea columns = new JTextArea(6, 29);
+    private void useImportedRules(Path selected) {
+        demoSelected = false;
+        contract = null;
+        contractPath = selected;
+        inputsChanged();
+    }
+
+    private void editRules(RuleDraft draft) {
+        JTextArea columns = new JTextArea(draft.columns(), 6, 29);
         columns.setFont(uiFont(14, Font.PLAIN));
         String[] separators = {"Comma (,)", "Semicolon (;)", "Tab"};
         JComboBox<String> delimiter = new JComboBox<>(separators);
-        JTextField name = new JTextField("customer-import");
+        delimiter.setSelectedIndex(draft.separator());
+        JTextField name = new JTextField(draft.name());
         JPanel fields = stack(Color.WHITE);
         fields.add(fieldLabel("Integration name", name));
         name.setMaximumSize(new Dimension(Integer.MAX_VALUE, name.getPreferredSize().height));
@@ -285,10 +323,22 @@ public final class DesktopApp {
         fields.add(fieldLabel("CSV separator", delimiter));
         delimiter.setAlignmentX(Component.LEFT_ALIGNMENT);
         fields.add(delimiter);
-        while (JOptionPane.showConfirmDialog(window, fields, "Create import rules",
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+        fields.add(Box.createVerticalStrut(8));
+        fields.add(label("Load headers from an export that already imports successfully."));
+        String[] options = {"Use these rules", "Load headers from CSV…", "Cancel"};
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(window, fields, "Create import rules",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+            if (choice == 1) {
+                Path baseline = chooseFile("Choose a known-good CSV", "CSV export", "csv");
+                if (baseline == null) continue;
+                RuleDraft current = new RuleDraft(name.getText(), columns.getText(), delimiter.getSelectedIndex());
+                loadBaseline(baseline, current);
+                return;
+            }
+            if (choice != 0) return;
             try {
-                acceptRules(makeRules(name.getText(), columns.getText(), delimiter.getSelectedIndex()), null);
+                useCreatedRules(makeRules(name.getText(), columns.getText(), delimiter.getSelectedIndex()));
                 return;
             } catch (InputError problem) {
                 JOptionPane.showMessageDialog(window, problem.getMessage(), "Check rule inputs", JOptionPane.ERROR_MESSAGE);
@@ -296,18 +346,34 @@ public final class DesktopApp {
         }
     }
 
+    private void useCreatedRules(Contract rules) {
+        demoSelected = false;
+        contract = rules;
+        contractPath = null;
+        inputsChanged();
+    }
+
+    private void loadBaseline(Path baseline, RuleDraft draft) {
+        perform(() -> baselineDraft(baseline, draft), this::editRules, message -> {
+            JOptionPane.showMessageDialog(window, message, "Could not load CSV headers", JOptionPane.ERROR_MESSAGE);
+            editRules(draft);
+        });
+    }
+
+    private static RuleDraft baselineDraft(Path baseline, RuleDraft draft) {
+        List<String> headers = Csv.parse(FilesEx.read(baseline), SEPARATORS.get(draft.separator()).charAt(0), false)
+            .header();
+        return new RuleDraft(draft.name(), String.join("\n", headers), draft.separator());
+    }
+
     private static Contract makeRules(String name, String columns, int separator) {
         List<String> required = columns.lines().filter(line -> !line.isBlank()).toList();
         if (required.isEmpty()) throw new InputError("Enter at least one required column name.");
-        return Contract.parse(Json.write(Json.map("version", 2, "delimiter", List.of(",", ";", "\t").get(separator),
+        if (required.stream().distinct().count() != required.size()) {
+            throw new InputError("Each required column name can appear only once.");
+        }
+        return Contract.parse(Json.write(Json.map("version", 2, "delimiter", SEPARATORS.get(separator),
             "validateRows", true, "integrations", List.of(Json.map("id", name.strip(), "required", required)))));
-    }
-
-    private void acceptRules(Contract selected, Path source) {
-        demoSelected = false;
-        contract = selected;
-        contractPath = source;
-        inputsChanged();
     }
 
     private void startDemo() {
@@ -319,8 +385,20 @@ public final class DesktopApp {
 
     private void inputsChanged() {
         describeInputs();
-        resetResult("Ready to check", csvPath == null ? "Choose a CSV export to check."
-            : contract == null ? "Create or import the rules for your export." : "Both inputs are ready. Click Check export.");
+        if (csvPath != null && hasRules()) {
+            runCheck();
+        } else if (contractPath != null && contract == null) {
+            validateRules();
+        } else {
+            showNextStep();
+        }
+    }
+
+    private void showNextStep() {
+        String detail = csvPath != null ? "Create rules or import JSON to run the check."
+            : contract != null ? "Rules are ready. Choose a CSV export to run the check."
+            : "Choose a CSV and add its import rules, or try the built-in demo.";
+        resetResult("Ready to check", detail);
         updateButtons();
     }
 
@@ -330,8 +408,9 @@ public final class DesktopApp {
             ? fileName(contractPath) : "Rules created in Cellar Guard";
         setInputLabel(csvLabel, Objects.requireNonNullElse(csvName, "No CSV selected"));
         Contract active = activeContract();
-        setInputLabel(rulesLabel, active == null ? "No rules loaded"
-            : contractName + "  ·  " + active.integrations().size() + " integration(s)");
+        String rulesText = active == null ? Objects.requireNonNullElse(fileName(contractPath), "No rules loaded")
+            : contractName + "  ·  " + active.integrations().size() + " integration(s)";
+        setInputLabel(rulesLabel, rulesText);
     }
 
     private static void setInputLabel(JLabel label, String text) {
@@ -344,15 +423,48 @@ public final class DesktopApp {
         return demoSelected ? DEMO_CONTRACT : contract;
     }
 
+    private boolean hasRules() {
+        return activeContract() != null || contractPath != null;
+    }
+
     private void runCheck() {
-        Contract selectedContract = activeContract();
-        if (selectedContract == null || (!demoSelected && csvPath == null)) return;
+        if (busy || !hasRules()) return;
+        if (!demoSelected && csvPath == null) {
+            if (contractPath != null) validateRules();
+            return;
+        }
         resetResult("Checking export…", "Applying the selected import rules.");
+        if (!demoSelected && contractPath != null) {
+            readImportedRules(this::checkCsv);
+        } else {
+            checkCsv(activeContract());
+        }
+    }
+
+    private void validateRules() {
+        resetResult("Reading import rules…", "Checking the JSON contract.");
+        readImportedRules(loaded -> showNextStep());
+    }
+
+    private void readImportedRules(Consumer<Contract> next) {
+        Path selected = contractPath;
+        contract = null;
+        describeInputs();
+        perform(() -> Contract.parse(FilesEx.read(selected)), loaded -> {
+            contract = loaded;
+            describeInputs();
+            next.accept(loaded);
+        }, message -> showError("Rules error", "Fix the JSON file and retry, or select another contract.",
+            selected.getFileName() + "\n" + message));
+    }
+
+    private void checkCsv(Contract selectedContract) {
         Path selectedCsv = csvPath;
         boolean sample = demoSelected;
         boolean fixed = demoFixed;
         perform(() -> Checker.check(selectedContract, sample ? Demo.csv(!fixed) : FilesEx.read(selectedCsv), false),
-            this::showResult);
+            this::showResult, message -> showError("CSV input error", "Fix the CSV and check again.",
+                sample ? message : selectedCsv.getFileName() + "\n" + message));
     }
 
     private void showResult(Map<String, Object> result) {
@@ -367,15 +479,35 @@ public final class DesktopApp {
         if (demoSelected && blocked) detail = "The inventory importer expects order_id. Apply the demo fix to compare results.";
         if (demoSelected && demoFixed && passed) detail = "Restoring order_id fixed the inventory import rule.";
         feedback.setText(detail);
-        findings.setText(explain(result));
-        findings.setCaretPosition(0);
-        report = Reports.text(result);
+        int blockedCount = (int) result.get("failedIntegrations");
+        int warnings = (int) result.get("warningIntegrations");
+        int passes = ((List<?>) result.get("results")).size() - blockedCount - warnings;
+        resultCounts.setText(passes + " passed   ·   " + blockedCount + " blocked   ·   " + warnings + " warnings");
+        report = result;
+        renderFindings();
     }
 
-    private static String explain(Map<String, Object> result) {
+    private void renderFindings() {
+        if (report == null) return;
+        ResultView view = (ResultView) resultView.getSelectedItem();
+        findings.setText(view == ResultView.COLUMNS ? showColumns(report) : explain(report, view == ResultView.ISSUES));
+        findings.setCaretPosition(0);
+    }
+
+    private static String showColumns(Map<String, Object> result) {
+        List<?> headers = (List<?>) result.get("header");
+        StringBuilder text = new StringBuilder(headers.size() + " columns in export\n\n");
+        for (int index = 0; index < headers.size(); index++) {
+            text.append(index + 1).append("  ").append(headers.get(index)).append('\n');
+        }
+        return text.toString();
+    }
+
+    private static String explain(Map<String, Object> result, boolean onlyIssues) {
         StringBuilder text = new StringBuilder();
         for (Object raw : (List<?>) result.get("results")) {
             var integration = Json.object(raw);
+            if (onlyIssues && Boolean.TRUE.equals(integration.get("passed"))) continue;
             String status = Boolean.TRUE.equals(integration.get("passed")) ? "PASS"
                 : "warning".equals(integration.get("severity")) ? "WARN" : "BLOCK";
             text.append(status).append("  ").append(integration.get("integration"))
@@ -396,6 +528,7 @@ public final class DesktopApp {
             }
             text.append('\n');
         }
+        if (text.isEmpty()) text.append("No rule issues found.\n\n");
         String scope = (String) result.get("scope");
         text.append(switch (scope) {
             case "headers-only" -> "Scope: CSV headers.";
@@ -406,7 +539,7 @@ public final class DesktopApp {
         return text.toString();
     }
 
-    private <T> void perform(java.util.concurrent.Callable<T> action, Consumer<T> complete) {
+    private <T> void perform(Callable<T> action, Consumer<T> complete, Consumer<String> fail) {
         busy = true;
         updateButtons();
         new SwingWorker<T, Void>() {
@@ -415,23 +548,27 @@ public final class DesktopApp {
             }
 
             @Override protected void done() {
+                busy = false;
                 try {
                     complete.accept(get());
                 } catch (InterruptedException error) {
                     Thread.currentThread().interrupt();
-                    resetResult("Check interrupted", "Retry the operation.");
+                    fail.accept("The operation was interrupted. Try again.");
                 } catch (ExecutionException error) {
                     Throwable cause = error.getCause();
-                    String message = cause instanceof InputError ? cause.getMessage()
-                        : "Check the file path and permissions, then retry.";
-                    resetResult("Input error · Check did not run", "Correct the input and retry.");
-                    findings.setText(message);
+                    fail.accept(cause instanceof InputError ? cause.getMessage()
+                        : "Check the file path and permissions, then retry.");
                 } finally {
-                    busy = false;
                     updateButtons();
                 }
             }
         }.execute();
+    }
+
+    private void showError(String title, String detail, String explanation) {
+        resetResult(title, detail);
+        findings.setText(explanation);
+        findings.setCaretPosition(0);
     }
 
     private void resetResult(String title, String detail) {
@@ -439,30 +576,51 @@ public final class DesktopApp {
         verdict.setForeground(INK);
         feedback.setText(detail);
         findings.setText("");
+        resultCounts.setText("");
         report = null;
     }
 
     private void updateButtons() {
         for (JButton input : List.of(chooseCsv, buildRules, importRules, demo)) input.setEnabled(!busy);
         saveRules.setEnabled(!busy && activeContract() != null);
-        check.setEnabled(!busy && activeContract() != null && (csvPath != null || demoSelected));
+        boolean validateOnly = !demoSelected && csvPath == null && contractPath != null;
+        check.setText(validateOnly ? "Validate rules" : "Check export");
+        check.setMnemonic(validateOnly ? 'V' : 'E');
+        check.setEnabled(!busy && hasRules() && (csvPath != null || demoSelected || validateOnly));
         demo.setVisible(!demoSelected);
         fixDemo.setVisible(demoSelected);
         leaveDemo.setVisible(demoSelected);
         leaveDemo.setEnabled(!busy);
         fixDemo.setEnabled(!busy && demoSelected && !demoFixed && report != null);
         saveReport.setEnabled(!busy && report != null);
+        copyReport.setEnabled(!busy && report != null);
+        resultView.setEnabled(!busy && report != null);
+    }
+
+    private void copyReport() {
+        try {
+            StringSelection text = new StringSelection(Reports.text(report));
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(text, null);
+            JOptionPane.showMessageDialog(window, "Report copied to the clipboard.", "Cellar Guard",
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (IllegalStateException error) {
+            JOptionPane.showMessageDialog(window, "The clipboard is busy. Try copying again or save the report.",
+                "Could not copy report", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private Path chooseFile(String title, String type, String extension) {
         JFileChooser chooser = chooser(title, type, extension);
-        return chooser.showOpenDialog(window) == JFileChooser.APPROVE_OPTION ? chooser.getSelectedFile().toPath() : null;
+        if (chooser.showOpenDialog(window) != JFileChooser.APPROVE_OPTION) return null;
+        lastDirectory = chooser.getCurrentDirectory();
+        return chooser.getSelectedFile().toPath();
     }
 
     private void saveFile(String suggested, String type, String extension, String text) {
         JFileChooser chooser = chooser("Save " + type.toLowerCase(java.util.Locale.ROOT), type, extension);
         chooser.setSelectedFile(new File(suggested));
         if (chooser.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) return;
+        lastDirectory = chooser.getCurrentDirectory();
         Path selected = chooser.getSelectedFile().toPath();
         Path target = selected.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith("." + extension)
             ? selected : selected.resolveSibling(selected.getFileName() + "." + extension);
@@ -485,8 +643,8 @@ public final class DesktopApp {
             JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private static JFileChooser chooser(String title, String type, String extension) {
-        JFileChooser chooser = new JFileChooser();
+    private JFileChooser chooser(String title, String type, String extension) {
+        JFileChooser chooser = new JFileChooser(lastDirectory);
         chooser.setDialogTitle(title);
         chooser.setFileFilter(new FileNameExtensionFilter(type + " (*." + extension + ")", extension));
         return chooser;
@@ -575,34 +733,80 @@ public final class DesktopApp {
         try {
             SwingUtilities.invokeAndWait(app.demo::doClick);
             app.awaitVerdict("BLOCK");
+            SwingUtilities.invokeAndWait(() -> {
+                app.resultView.setSelectedItem(ResultView.ISSUES);
+                if (!app.findings.getText().contains("order_id") || app.findings.getText().contains("finance-summary")) {
+                    throw new IllegalStateException("Issues view did not filter the passing integration");
+                }
+                app.resultView.setSelectedItem(ResultView.COLUMNS);
+                if (!app.findings.getText().contains("1  id")) throw new IllegalStateException("Missing CSV columns");
+                app.resultView.setSelectedItem(ResultView.ALL);
+            });
             SwingUtilities.invokeAndWait(app.fixDemo::doClick);
             app.awaitVerdict("PASS");
 
-            Path csv = Files.createTempFile("cellar-guard-smoke-", ".csv");
+            Path directory = Files.createTempDirectory("cellar-guard-smoke-");
+            Path csv = directory.resolve("candidate.csv");
+            Path baseline = directory.resolve("known-good.csv");
+            Path rules = directory.resolve("rules.json");
             try {
-                Files.writeString(csv, "customer;amount\nA;100\n");
+                Files.writeString(baseline, "\"customer;code\";amount\nC;200\n");
+                RuleDraft draft = baselineDraft(baseline, new RuleDraft("example", "", 1));
+                if (!draft.columns().equals("customer;code\namount")) {
+                    throw new IllegalStateException("Quoted baseline headers were not read correctly");
+                }
+                Contract starter = makeRules(draft.name(), draft.columns(), draft.separator());
+                Files.writeString(csv, "\"customer;code\";amount\nA;100\n");
                 SwingUtilities.invokeAndWait(() -> {
-                    app.acceptRules(makeRules("example", "customer\namount", 1), null);
-                    app.csvPath = csv;
-                    app.inputsChanged();
-                    app.check.doClick();
+                    app.useCsv(csv);
+                    app.useCreatedRules(starter);
                 });
                 app.awaitVerdict("PASS");
+
                 SwingUtilities.invokeAndWait(app.demo::doClick);
                 app.awaitVerdict("BLOCK");
-                SwingUtilities.invokeAndWait(() -> {
-                    app.leaveDemo.doClick();
-                    app.check.doClick();
-                });
+                SwingUtilities.invokeAndWait(app.leaveDemo::doClick);
                 app.awaitVerdict("PASS");
-                Files.writeString(csv, "customer;amount\nA\n");
+
+                Files.writeString(rules, starter.canonical());
+                SwingUtilities.invokeAndWait(() -> app.useImportedRules(rules));
+                app.awaitVerdict("PASS");
+                Files.writeString(rules, "{");
                 SwingUtilities.invokeAndWait(app.check::doClick);
-                app.awaitVerdict("Input error");
+                app.awaitVerdict("Rules error");
                 SwingUtilities.invokeAndWait(() -> {
-                    if (app.saveReport.isEnabled()) throw new IllegalStateException("Stale report is still available");
+                    if (app.saveReport.isEnabled() || app.copyReport.isEnabled() || app.saveRules.isEnabled()) {
+                        throw new IllegalStateException("An old report or rule set is still available");
+                    }
                 });
+
+                Contract changed = makeRules("example", "customer;code\nnew-column", 1);
+                Files.writeString(rules, changed.canonical());
+                SwingUtilities.invokeAndWait(app.check::doClick);
+                app.awaitVerdict("BLOCK");
+
+                Files.writeString(csv, "\"customer;code\";amount\nA\n");
+                SwingUtilities.invokeAndWait(app.check::doClick);
+                app.awaitVerdict("CSV input error");
+                SwingUtilities.invokeAndWait(() -> {
+                    if (app.saveReport.isEnabled() || app.copyReport.isEnabled()) {
+                        throw new IllegalStateException("A previous report survived a CSV input error");
+                    }
+                });
+
+                SwingUtilities.invokeAndWait(() -> {
+                    app.csvPath = null;
+                    app.useImportedRules(rules);
+                });
+                app.awaitVerdict("Ready");
+                Files.writeString(rules, "{");
+                SwingUtilities.invokeAndWait(app.check::doClick);
+                app.awaitVerdict("Rules error");
             } finally {
+                Files.deleteIfExists(rules);
+                Files.deleteIfExists(baseline);
                 Files.deleteIfExists(csv);
+                Files.deleteIfExists(directory);
             }
         } finally {
             SwingUtilities.invokeAndWait(app.window::dispose);
