@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 public final class Main {
-    public static final String VERSION="3.1.0";
+    public static final String VERSION="3.2.0";
     private Main() {}
     public static void main(String[] args) {int code=run(args);if(code!=0)System.exit(code);}
     public static int run(String[] args) {
@@ -19,6 +19,7 @@ public final class Main {
                 case "diff" -> Set.of("--config","--baseline","--csv","--format","--output","--summary");
                 case "history" -> Set.of("--config","--data");
                 case "web" -> Set.of("--data","--port");
+                case "desktop" -> Set.of();
                 case "audit-verify" -> Set.of("--data");
                 case "validate","init" -> Set.of("--config");
                 case "export-demo" -> Set.of("--out","--demo-break");
@@ -50,6 +51,10 @@ public final class Main {
                     return 0;
                 }
                 case "history" -> {System.out.println(Json.write(store.history()));return 0;}
+                case "desktop" -> {
+                    io.cellar.desktop.DesktopApp.main(new String[0]);
+                    return 0;
+                }
                 case "web" -> {
                     int port=-1;
                     if(options.containsKey("--port")){try{port=Integer.parseInt(options.get("--port"));}catch(NumberFormatException e){throw new InputError("Port must be an integer.");}if(port<0||port>65535)throw new InputError("Port must be 0–65535.");}
@@ -114,6 +119,7 @@ public final class Main {
     private static void help(){System.out.println("""
         Cellar Guard — Java CSV compatibility checker
         java -jar dist/cellar.jar <command> [options]
+          desktop                   Open the local desktop checker
           web [--port N]             Start the web app (default; no sign-in on localhost)
           audit-verify               Verify the tamper-evident audit chain (needs the master key)
           init                       Create sample cellar.json, never overwrite

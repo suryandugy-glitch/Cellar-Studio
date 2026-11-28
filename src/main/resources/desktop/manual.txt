@@ -1,0 +1,24 @@
+Try the built-in demo
+
+1. Click Run breaking demo. The demo changes order_id to id, which breaks the inventory report. The finance integration still passes.
+2. Click Apply demo fix & recheck. Guard restores order_id in the sample and runs the same rules again. Your files are unaffected. Click Back to my files to return to your own CSV and rules.
+
+Check your own export
+
+1. Choose CSV and select the UTF-8 export you plan to send.
+2. Click Create rules and enter the receiving system's required column names, one per line. Choose the separator used by the export. If you already have a Cellar Guard contract, click Import JSON.
+3. Click Check export. Read the result and the suggested next step for each finding.
+4. Correct the export source, produce a new CSV, and check it again. Use Save report to share findings with your team. Use Save rules to reuse the contract later.
+
+Read the result
+
+PASS means all integrations met the declared rules.
+BLOCK means at least one required integration failed. Correct the issue before sending the export.
+WARN means only advisory integrations reported issues. Review those findings before shipping.
+Input error means the check could not run. Correct the input and retry.
+
+About files and rules
+
+Create rules checks required column names and that each record matches the header width. Column names are case-sensitive. To check types, uniqueness, numeric ranges or other advanced rules, import a JSON contract with those rules declared.
+Guard accepts UTF-8 files up to 8 MiB and checks up to 100,000 data records when row validation is enabled. A report includes headers, rule findings and record numbers, without CSV cell values.
+CSV data and rules are processed offline. Save any rules and reports you want to keep before closing the app.

@@ -32,7 +32,7 @@ if (workspaceOrigin) {
   // A connected Java backend provides the live workspace entry. Public static
   // deployments instead offer the downloadable Java release.
   landing = landing.replace(
-    '<a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Guard ZIP</a>',
+    '<a class="button button-primary" href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe">Download for Windows</a>',
     '<a class="button button-primary" href="./workspace.html">Open workspace</a>');
 }
 

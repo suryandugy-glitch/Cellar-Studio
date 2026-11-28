@@ -19,8 +19,10 @@ The app checks files on the device, up to 8 MiB for a CSV and 1 MiB for a contra
 
 If you're not a developer, **use the release ZIP first**. You don't need to clone the repository or compile Java source.
 
-1. Open [Cellar Guard's GitHub release](https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0).
-2. Under **Assets**, download `Cellar-Guard-3.1.0.zip` and extract it.
+On Windows x64, double-click [Cellar-Guard-Windows-x64.exe](https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe) for the offline checker and built-in user manual. For the CLI or Java workspace, use the ZIP below.
+
+1. Open [Cellar Guard's GitHub release](https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0).
+2. Under **Assets**, download `Cellar-Guard-3.2.0.zip` and extract it.
 3. Check `java -version` in Command Prompt/Terminal. Install a Java **21 or newer** runtime if needed.
 4. **Windows:** double-click `start-guard.bat`. **macOS/Linux:** run `sh start-guard.sh` inside the extracted directory.
 5. Keep the terminal open and visit the address it prints (usually `http://127.0.0.1:8080`).

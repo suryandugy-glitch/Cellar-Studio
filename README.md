@@ -12,7 +12,7 @@
   <a href="https://cellar-csv.vercel.app/contribute.html">Contribute</a> ·
   <a href="https://cellar-csv.vercel.app/guard.html">Cellar Guard</a> ·
   <a href="https://cellar-csv.vercel.app/guard-app.html">Browser checker</a> ·
-  <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0">Download Guard</a> ·
+  <a href="https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0">Download Guard</a> ·
   <a href="https://cellar-csv.vercel.app/manual.html">Online manual</a> ·
   <a href="docs/CELLAR_GUARD_MANUAL.md">Technical manual</a> ·
   <a href="https://cellar-csv.vercel.app/walkthrough.html">Example reports</a>
@@ -68,15 +68,11 @@ The browser reads UTF-8 CSV files up to 8 MiB and contracts up to 1 MiB. Your CS
 
 Open [Ask Cellar](https://cellar-csv.vercel.app/studio.html?ask=1) on your phone or computer. Ask a general question, choose **Show me a CSV demo** for a worked Cellar Guard example, or ask about the page you’re on. The assistant can follow recent turns and links to relevant public pages when it uses them. Select **Expand** for a larger chat and **New chat** to clear the conversation on the page. When the model is unavailable, the site guide provides public help. The checker keeps CSVs and contracts on the device.
 
-### Download and run (no source build)
+### Download and run
 
-1. Open the dedicated [Cellar Guard GitHub release](https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.1.0), download **Cellar-Guard-3.1.0.zip**, and extract it.
-2. Install Java 21 or later if needed (`java -version` should show 21+).
-3. On Windows, double-click `start-guard.bat`. On macOS/Linux, run `sh start-guard.sh` in the extracted folder. Open the local address printed in the terminal.
-4. Try the included **PASS → BLOCK → FIX → PASS** demonstration: double-click `try-demo.bat` on Windows or run `sh try-demo.sh` on macOS/Linux.
-5. Follow `START_HERE.md` inside the ZIP to repair `samples/broken.csv` yourself and check a customer export.
+**Windows x64:** Double-click [Cellar-Guard-Windows-x64.exe](https://github.com/suryandugy-glitch/Cellar-Studio/releases/download/guard-v3.2.0/Cellar-Guard-Windows-x64.exe). The desktop app includes Java and opens without a browser. Click **Run breaking demo** and then **Apply demo fix & recheck**, or click **User manual**. To check your own export, choose a CSV and create rules in the app or import an existing JSON contract.
 
-The ZIP includes the runnable JAR, all three synthetic CSVs, a contract and both beginner and technical manuals. It is **not a native `.exe` installer**; Java 21+ is required. The [online manual](https://cellar-csv.vercel.app/manual.html#demo) shows the same example.
+**Java ZIP and CLI:** Download **Cellar-Guard-3.2.0.zip** from the [Cellar Guard release](https://github.com/suryandugy-glitch/Cellar-Studio/releases/tag/guard-v3.2.0) and extract it. With Java 21 or newer installed, open the browser workspace using `start-guard.bat` on Windows or `sh start-guard.sh` on macOS/Linux. See `START_HERE.md` in the ZIP for the sample CSVs, contract and command-line walkthrough.
 
 ### What it checks
 
